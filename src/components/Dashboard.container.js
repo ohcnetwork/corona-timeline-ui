@@ -12,8 +12,21 @@ const _mapToChartData = (selectedCountries, countryLookup) => {
     return countryLookup[country];
   }));
 
-  const sliderLookupData = _.range(countryData[0].data.length).map(index => {
-     return countryData.map((stackedLineItem) => {
+  // const sliderLookupData = _.range(countryData[0].data.length).map(index => {
+  //    return countryData.map((stackedLineItem) => {
+  //     if(stackedLineItem.name === 'other') {
+  //       return stackedLineItem;
+  //     }
+  //      return {
+  //        ...stackedLineItem,
+  //        data: stackedLineItem.data.slice(0, index),
+  //      };
+  //    })
+  // });
+  return countryData;
+}
+const _mapToSlidPositionData = (countryLookup, index) => {
+  return countryLookup.map((stackedLineItem) => {
       if(stackedLineItem.name === 'other') {
         return stackedLineItem;
       }
@@ -22,17 +35,15 @@ const _mapToChartData = (selectedCountries, countryLookup) => {
          data: stackedLineItem.data.slice(0, index),
        };
      })
-  });
-  return sliderLookupData;
 }
 const style = { width: '95%', margin: 60 };
 
 export function Dashboard() {
    const [stackedMapData, setStackedMapData] = useState({
      categories: [''],
-     currentData: { Italy: [], US: [], Spain: [], China: [], other: [] },
+     currentData: { Italy: [], US: [], Spain: [], China: []},
    });
-   const [selectedCountries, setSelectedCountries] = useState(['China','Spain','Italy', 'US', 'other']);
+   const [selectedCountries, setSelectedCountries] = useState(['China','Spain','Italy', 'US']);
    const [chartDataLookup, setChartDataLookup] = useState([[]]);
    const [chartData, setChartData] = useState([]);
    const [sliderMarks, setSliderMarks] = useState({});
@@ -48,16 +59,39 @@ export function Dashboard() {
            );
            setStackedMapData(stackLineView);
            setChartDataLookup(chartDataLookup);
-           setChartData(chartDataLookup[stackLineView.categories.length-1]);
+           setChartData(_mapToSlidPositionData(chartDataLookup, 1));
        }
        retrieveWorldCoronaReports();
        console.log('await call');
    }, []);
   
-const onMarkChange = _.debounce((index) => {
-  console.log('onMarchchange');
-  index < stackedMapData.categories.length &&  setChartData(chartDataLookup[index]);
-},250)
+const onMarkChange = (index) => {
+  const chartSeries = chartRef.current.chart.series;
+  console.log(chartSeries);
+  const operation = index > chartSeries[0].data.length
+    ? { isIndexLess: false, rangeArray: _.range(chartSeries[0].data.length, index) }
+    : { isIndexLess: true, rangeArray: _.range(chartSeries[0].data.length, index-1)};
+  console.log('index', index, 'onMarchchange Operation>', operation);
+  chartSeries.forEach((series, i) => {
+    if(i === chartSeries.length - 1) {
+      return;
+    }
+    if(operation.isIndexLess) {
+      operation.rangeArray.forEach(remIndex => {
+        series.removePoint(remIndex);
+      });
+      return;
+    }
+    if(_.isEmpty(operation.rangeArray)) {
+      series.addPoint(chartDataLookup[i].data[index]);
+      return;
+    }
+    operation.rangeArray.forEach(addIndex => {
+      series.addPoint([addIndex, chartDataLookup[i].data[addIndex]]);
+    });
+  });
+  // index < stackedMapData.categories.length &&  setChartData(chartDataLookup[index]);
+}
 const handle = (props) => {
   const { value, dragging, index, ...restProps } = props;
   return (
@@ -85,6 +119,7 @@ const handle = (props) => {
          <Slider
            min={0}
            handle={handle}
+           defaultValue={1}
            max={stackedMapData?.categories?.length}
            onChange={onMarkChange}
          />

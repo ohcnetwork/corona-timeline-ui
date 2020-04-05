@@ -8,6 +8,5 @@ export const mapToStackedLineView = (data) => {
             data: _.map(report, 'confirmed')
         }
     }), 'name');
-    currentData.other = { name: 'other', data: _.map(categories, category => 0) }
     return { categories, currentData };
 }

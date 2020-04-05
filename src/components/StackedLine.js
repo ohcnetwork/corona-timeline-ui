@@ -51,7 +51,8 @@ export function StackedLine({categories, data = [], chartRef}) {
                 ...opts,
                 xAxis: {
                 ...opts.xAxis,
-                categories
+                categories,
+                max: categories.length - 1
                 },
                 series: data
             });
