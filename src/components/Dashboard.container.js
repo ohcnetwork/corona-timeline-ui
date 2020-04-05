@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as _ from 'lodash';
-import 'rc-slider/assets/index.css';
 import Slider from '@material-ui/core/Slider';
-
-import Tooltip from 'rc-tooltip';
 import { mapToStackedLineView } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
