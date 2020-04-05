@@ -72,24 +72,28 @@ const onMarkChange = (index) => {
     ? { isIndexLess: false, rangeArray: _.range(chartSeries[0].data.length, index) }
     : { isIndexLess: true, rangeArray: _.range(chartSeries[0].data.length, index-1)};
   console.log('index', index, 'onMarchchange Operation>', operation);
+  const isAutoRedraw = operation.rangeArray.length < 3;
   chartSeries.forEach((series, i) => {
     if(i === chartSeries.length - 1) {
       return;
     }
     if(operation.isIndexLess) {
       operation.rangeArray.forEach(remIndex => {
-        series.removePoint(remIndex);
+        series.removePoint(remIndex, isAutoRedraw);
       });
       return;
     }
-    if(_.isEmpty(operation.rangeArray)) {
-      series.addPoint(chartDataLookup[i].data[index]);
+    if(operation.rangeArray.length === 1) {
+      series.addPoint([operation.rangeArray[0], chartDataLookup[i].data[operation.rangeArray[0]]]);
       return;
     }
     operation.rangeArray.forEach(addIndex => {
-      series.addPoint([addIndex, chartDataLookup[i].data[addIndex]]);
+      series.addPoint([addIndex, chartDataLookup[i].data[addIndex]], isAutoRedraw);
     });
   });
+  if (!isAutoRedraw) {
+    chartRef.current.chart.redraw();
+  }
   // index < stackedMapData.categories.length &&  setChartData(chartDataLookup[index]);
 }
 const handle = (props) => {
