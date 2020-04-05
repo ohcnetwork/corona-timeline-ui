@@ -5,10 +5,10 @@ import HighchartsReact from 'highcharts-react-official'
 export function StackedLine({categories, data = [], chartRef}) {
     const opts = {
       title: {
-        text: 'Corona over world'
+        text: 'World Corona Timeline'
       },
       subtitle: {
-        text: 'Source: API by WHO'
+        text: 'Source: WHO API'
       },
       xAxis: {
         categories,
@@ -55,7 +55,7 @@ export function StackedLine({categories, data = [], chartRef}) {
                 },
                 series: data
             });
-            console.log('propDAta trigr');
+            console.log('propDAta trigr series', data);
     }, [data])
     return (
       <HighchartsReact

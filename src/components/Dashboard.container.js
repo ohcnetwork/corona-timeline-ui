@@ -4,6 +4,13 @@ import Slider from '@material-ui/core/Slider';
 import { mapToStackedLineView } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
+import SettingsIcon from '@material-ui/icons/Settings';
+import { Modal, FormControl, InputLabel, Input, Select, MenuItem, Checkbox, ListItemText } from '@material-ui/core';
+import { makeStyles } from '@material-ui/core/styles';
+import Chip from '@material-ui/core/Chip';
+import Autocomplete from '@material-ui/lab/Autocomplete';
+import TextField from '@material-ui/core/TextField';
+
 
 const _mapToChartData = (selectedCountries, countryLookup) => {
   const countryData = _.merge(_.map(selectedCountries, (country) => {
@@ -34,40 +41,151 @@ const _mapToSlidPositionData = (countryLookup, index) => {
        };
      })
 }
-const style = { width: '95%', 'margin-left': 60, 'margin-top': 70};
+const style = { width: '95%', 'marginLeft': 60, 'marginTop': 70};
+
+function getModalStyle() {
+  const top = 50;
+  const left = 50;
+
+  return {
+    top: `${top}%`,
+    left: `${left}%`,
+    transform: `translate(-${top}%, -${left}%)`,
+  };
+}
+const useStyles = makeStyles((theme) => ({
+  paper: {
+    position: 'absolute',
+    width: 600,
+    height: 400,
+    backgroundColor: theme.palette.background.paper,
+    border: '2px solid #000',
+    boxShadow: theme.shadows[5],
+    padding: theme.spacing(2, 4, 3),
+  },
+  formControl: {
+    margin: theme.spacing(1),
+    minWidth: 120,
+    maxWidth: 300,
+  },
+  noLabel: {
+    marginTop: theme.spacing(3),
+  },
+  root: {
+    width: 500,
+    '& > * + *': {
+      marginTop: theme.spacing(3),
+    },
+  },
+}));
+
+const ITEM_HEIGHT = 48;
+const ITEM_PADDING_TOP = 8;
+const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      width: 250,
+    },
+  },
+};
 
 export function Dashboard() {
    const [stackedMapData, setStackedMapData] = useState({
      categories: [''],
-     currentData: { Italy: [], US: [], Spain: [], China: []},
+     currentData: { Italy: [], Spain: [], China: []},
    });
-   const [selectedCountries, setSelectedCountries] = useState(['China','Spain','Italy', 'US']);
+   const [selectedCountries, setSelectedCountries] = useState(['Spain','Italy']);
    const [chartDataLookup, setChartDataLookup] = useState([[]]);
    const [chartData, setChartData] = useState([]);
    const [selectedDate, setSelectedDate] = useState('');
+   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const classes = useStyles();
+  // getModalStyle is not a pure function, we roll the style only on the first render
+  const [modalStyle] = React.useState(getModalStyle);
+
    const chartRef = useRef();
+   const sliderRef = useRef();
 
    useEffect(() => {
        async function retrieveWorldCoronaReports() {
            const reports = await retrieveCoronaWorldReports();
            const stackLineView = mapToStackedLineView(reports);
+           setStackedMapData(stackLineView);
+
            const chartDataLookup = _mapToChartData(
              selectedCountries,
              stackLineView.currentData
            );
-           setStackedMapData(stackLineView);
            setChartDataLookup(chartDataLookup);
            setChartData(_mapToSlidPositionData(chartDataLookup, 1));
            setSelectedDate(stackedMapData.categories[0]);
        }
        retrieveWorldCoronaReports();
+    //  sliderRef.focus();
+     console.log('sliderRef', sliderRef);
        console.log('await call');
    }, []);
+
   const sliderLabelFormat = (value)  => stackedMapData.categories[value - 1];
+
   const onSliderChange = _.debounce((event, index) => {
     _updateWithNewIndex(index);
     setSelectedDate(stackedMapData.categories[index - 1]);
   }, 200);
+  const onModalClose = () => {
+    setIsSettingsOpen(false);
+  }
+  const onCountriesSelection = (event, countries) => {
+    setSelectedCountries(countries);
+    const chartDataLookup = _mapToChartData(
+      countries,
+      stackedMapData.currentData
+    );
+    setChartDataLookup(chartDataLookup);
+    setChartData(_mapToSlidPositionData(chartDataLookup, 1));
+    setSelectedDate(stackedMapData.categories[0]);
+  };
+  
+   const _SettingsModal = () => {
+    return <Modal
+       open={isSettingsOpen}
+       onClose={onModalClose}
+       aria-labelledby="simple-modal-title"
+       aria-describedby="simple-modal-description"
+     >
+      <div style={modalStyle} className={classes.paper}>
+       <Tags></Tags>
+       </div>
+     </Modal>
+   }
+
+  function Tags() {
+    const classes = useStyles();
+
+    return (
+      <div className={classes.root}>
+        <Autocomplete
+          multiple
+          id="tags-standard"
+          options={Object.keys(stackedMapData.currentData)}
+          getOptionLabel={(option) => option}
+          defaultValue={selectedCountries}
+          onChange={onCountriesSelection}
+          autoHighlight={true}
+          openOnFocus={true}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="standard"
+              label="Select Countries"
+              placeholder="Countries"
+            />
+          )}
+        />
+      </div>
+     )
+    }
    return (
      <div className="chart-container">
        <div className="stacked-line">
@@ -82,17 +200,25 @@ export function Dashboard() {
            min={0}
            defaultValue={1}
            max={stackedMapData?.categories?.length}
+           ref={sliderRef}
            valueLabelDisplay="off"
            onChange={onSliderChange}
            valueLabelFormat={sliderLabelFormat}
          />
        </div>
-       <div className="slider-selected-date">{selectedDate}</div>
+       <div class="settings-wrap">
+         <div className="slider-selected-date">{selectedDate}</div>
+         <SettingsIcon style={{ cursor: 'pointer' }} onClick={() => { setIsSettingsOpen(true) }} />
+       </div>
+       <_SettingsModal></_SettingsModal>
      </div>
    );
 
   function _updateWithNewIndex(index) {
     const chartSeries = chartRef.current.chart.series;
+    if (_.isEmpty(chartSeries)) {
+      return;
+    }
     console.log(chartSeries);
     const operation = index > chartSeries[0].data.length
       ? { isIndexLess: false, rangeArray: _.range(chartSeries[0].data.length, index) }
