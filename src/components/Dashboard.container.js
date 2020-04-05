@@ -64,10 +64,10 @@ export function Dashboard() {
        console.log('await call');
    }, []);
   const sliderLabelFormat = (value)  => stackedMapData.categories[value - 1];
-  const onSliderChange = (event, index) => {
+  const onSliderChange = _.debounce((event, index) => {
     _updateWithNewIndex(index);
     setSelectedDate(stackedMapData.categories[index - 1]);
-  }
+  }, 200);
    return (
      <div className="chart-container">
        <div className="stacked-line">
