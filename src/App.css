@@ -6,3 +6,9 @@
   width: 100%;
   height: 100%;
 }
+
+.slider-selected-date {
+    margin-left: 60px;
+    font-size: small;
+    font-weight: bold;
+}

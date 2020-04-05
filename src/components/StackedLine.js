@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react';
 import Highcharts from 'highcharts'
 import HighchartsReact from 'highcharts-react-official'
-import * as _ from 'lodash';
 
 export function StackedLine({categories, data = [], chartRef}) {
     const opts = {
@@ -52,7 +51,7 @@ export function StackedLine({categories, data = [], chartRef}) {
                 xAxis: {
                 ...opts.xAxis,
                 categories,
-                max: categories.length - 1
+                max: categories.length
                 },
                 series: data
             });
