@@ -41,7 +41,7 @@ const _mapToSlidPositionData = (countryLookup, index) => {
        };
      })
 }
-const style = { width: '95%', 'marginLeft': 60, 'marginTop': 70};
+const style = { width: '95%', 'marginLeft': 60, 'marginTop': 95};
 
 function getModalStyle() {
   const top = 50;
