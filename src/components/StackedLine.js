@@ -14,11 +14,7 @@ export function StackedLine({categories, data = [], chartRef}) {
         text: 'Source: WHO API'
       },
       xAxis: {
-        categories,
-        tickmarkPlacement: 'on',
-        title: {
-          enabled: false
-        }
+        categories
       },
       yAxis: {
         title: {
@@ -35,10 +31,18 @@ export function StackedLine({categories, data = [], chartRef}) {
         valueSuffix: ' millions'
       },
       plotOptions: {
-        dataLabels: {
-          enabled: true
+        line: {
+          dataLabels: {
+            enabled: true,
+            formatter: function () {
+              const last = this.series.data[this.series.data.length - 1];
+              if (this.point.category === last.category && this.point.y === last.y) {
+                return this.point.y;
+              }
+              return "";
+            }
+          },
         },
-        enableMouseTracking: false
       },
       series: []
     };
