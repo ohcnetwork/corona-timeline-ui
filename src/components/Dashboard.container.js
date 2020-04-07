@@ -91,6 +91,7 @@ export function Dashboard() {
    const [chartData, setChartData] = useState([]);
    const [selectedDate, setSelectedDate] = useState('');
    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+   const [sliderValue, setSliderValue] = useState(0);
   const classes = useStyles();
   // getModalStyle is not a pure function, we roll the style only on the first render
   const [modalStyle] = React.useState(getModalStyle);
@@ -120,10 +121,11 @@ export function Dashboard() {
 
   const sliderLabelFormat = (value)  => stackedMapData.categories[value - 1];
 
-  const onSliderChange = _.debounce((event, index) => {
+  const onSliderChange =(event, index) => {
+    setSliderValue(index);
     _updateWithNewIndex(index);
     setSelectedDate(stackedMapData.categories[index - 1]);
-  }, 200);
+  };
   const onModalClose = () => {
     setIsSettingsOpen(false);
   }
@@ -200,6 +202,7 @@ export function Dashboard() {
        <div style={style}>
          <Slider
            min={0}
+           value={sliderValue}
            defaultValue={1}
            max={stackedMapData?.categories?.length}
            ref={sliderRef}
@@ -225,7 +228,8 @@ export function Dashboard() {
       ? { isIndexLess: false, rangeArray: _.range(chartSeries[0].data.length, index) }
       : { isIndexLess: true, rangeArray: _.range(chartSeries[0].data.length, index - 1) };
     console.log('index', index, 'onMarchchange Operation>', operation);
-    const isAutoRedraw = operation.rangeArray.length < 3;
+    // const isAutoRedraw = operation.rangeArray.length < 3;
+    const isAutoRedraw = false;
     chartSeries.forEach((series, i) => {
       if (operation.isIndexLess) {
         operation.rangeArray.forEach(remIndex => {
@@ -234,7 +238,7 @@ export function Dashboard() {
         return;
       }
       if (operation.rangeArray.length === 1) {
-        series.addPoint([operation.rangeArray[0], chartDataLookup[i].data[operation.rangeArray[0]]]);
+        series.addPoint([operation.rangeArray[0], chartDataLookup[i].data[operation.rangeArray[0]]], isAutoRedraw);
         return;
       }
       operation.rangeArray.forEach(addIndex => {
