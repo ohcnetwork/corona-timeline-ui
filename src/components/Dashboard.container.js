@@ -114,9 +114,6 @@ export function Dashboard() {
            setSelectedDate(stackedMapData.categories[0]);
        }
        retrieveWorldCoronaReports();
-    //  sliderRef.focus();
-     console.log('sliderRef', sliderRef);
-       console.log('await call');
    }, []);
 
   const sliderLabelFormat = (value)  => stackedMapData.categories[value - 1];
@@ -138,6 +135,7 @@ export function Dashboard() {
     setChartDataLookup(chartDataLookup);
     setChartData(_mapToSlidPositionData(chartDataLookup, 1));
     setSelectedDate(stackedMapData.categories[0]);
+    setSliderValue(0);
   };
   
    const _SettingsModal = () => {
@@ -223,11 +221,9 @@ export function Dashboard() {
     if (_.isEmpty(chartSeries)) {
       return;
     }
-    console.log(chartSeries);
     const operation = index > chartSeries[0].data.length
       ? { isIndexLess: false, rangeArray: _.range(chartSeries[0].data.length, index) }
       : { isIndexLess: true, rangeArray: _.range(chartSeries[0].data.length, index - 1) };
-    console.log('index', index, 'onMarchchange Operation>', operation);
     // const isAutoRedraw = operation.rangeArray.length < 3;
     const isAutoRedraw = false;
     chartSeries.forEach((series, i) => {
