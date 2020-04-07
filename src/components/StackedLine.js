@@ -4,6 +4,9 @@ import HighchartsReact from 'highcharts-react-official'
 
 export function StackedLine({categories, data = [], chartRef}) {
     const opts = {
+      chart: {
+        type: 'line'
+      },
       title: {
         text: 'World Corona Timeline'
       },
@@ -32,15 +35,10 @@ export function StackedLine({categories, data = [], chartRef}) {
         valueSuffix: ' millions'
       },
       plotOptions: {
-        area: {
-          stacking: 'normal',
-          lineColor: '#666666',
-          lineWidth: 1,
-          marker: {
-            lineWidth: 1,
-            lineColor: '#666666'
-          }
-        }
+        dataLabels: {
+          enabled: true
+        },
+        enableMouseTracking: false
       },
       series: []
     };

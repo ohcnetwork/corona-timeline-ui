@@ -12,3 +12,27 @@
     font-size: medium;
     font-weight: bold;
 }
+.add-countries {
+  position: absolute;
+  top: 0;
+  left:0;
+  z-index: 1;
+  padding-left: 55px;
+  padding-top: 5px;
+}
+/* div {
+  width: 200px;
+  height: 200px;
+  border-radius: 100px;
+  background-color: #ccc;
+  animation: glow 1s infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 10px -10px #aef4af;
+  }
+  to {
+    box-shadow: 0 0 10px 10px #aef4af;
+  }
+} */

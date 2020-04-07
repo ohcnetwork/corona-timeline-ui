@@ -4,8 +4,8 @@ import Slider from '@material-ui/core/Slider';
 import { mapToStackedLineView } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
-import SettingsIcon from '@material-ui/icons/Settings';
-import { Modal, FormControl, InputLabel, Input, Select, MenuItem, Checkbox, ListItemText } from '@material-ui/core';
+import PublicIcon from '@material-ui/icons/Public';
+import { Modal, IconButton, Button } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import Chip from '@material-ui/core/Chip';
 import Autocomplete from '@material-ui/lab/Autocomplete';
@@ -41,7 +41,7 @@ const _mapToSlidPositionData = (countryLookup, index) => {
        };
      })
 }
-const style = { width: '95%', 'marginLeft': 60, 'marginTop': 95};
+const style = { width: '95%', 'marginLeft': 60, 'marginTop': 85};
 
 function getModalStyle() {
   const top = 50;
@@ -81,15 +81,6 @@ const useStyles = makeStyles((theme) => ({
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
-    },
-  },
-};
-
 export function Dashboard() {
    const [stackedMapData, setStackedMapData] = useState({
      categories: [''],
@@ -188,6 +179,17 @@ export function Dashboard() {
     }
    return (
      <div className="chart-container">
+       <div className="add-countries">
+         <Button
+           onClick={() => { setIsSettingsOpen(true) }}
+           variant="contained"
+           color="default"
+           endIcon={<PublicIcon></PublicIcon>}
+         >
+           +
+      </Button>
+       </div>
+     
        <div className="stacked-line">
          <StackedLine
            categories={stackedMapData?.categories}
@@ -208,7 +210,6 @@ export function Dashboard() {
        </div>
        <div class="settings-wrap">
          <div className="slider-selected-date">{selectedDate}</div>
-         <SettingsIcon style={{ cursor: 'pointer' }} onClick={() => { setIsSettingsOpen(true) }} />
        </div>
        <_SettingsModal></_SettingsModal>
      </div>
