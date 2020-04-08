@@ -84,7 +84,7 @@ export function Dashboard() {
    const [selectedDate, setSelectedDate] = useState('');
    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
    const [sliderValue, setSliderValue] = useState(1);
-   const [isPlayMode, setIsPlayMode] = useState(false);
+   const [isPlayMode, setIsPlayMode] = useState(true);
   const classes = useStyles();
   // getModalStyle is not a pure function, we roll the style only on the first render
   const [modalStyle] = React.useState(getModalStyle);
