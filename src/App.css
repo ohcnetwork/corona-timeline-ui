@@ -19,20 +19,11 @@
   z-index: 1;
   padding-left: 55px;
   padding-top: 5px;
+  display: flex;
 }
-/* div {
-  width: 200px;
-  height: 200px;
-  border-radius: 100px;
-  background-color: #ccc;
-  animation: glow 1s infinite alternate;
+.add-country-btn {
+  height: 46px;
 }
-
-@keyframes glow {
-  from {
-    box-shadow: 0 0 10px -10px #aef4af;
-  }
-  to {
-    box-shadow: 0 0 10px 10px #aef4af;
-  }
-} */
+.play-pause {
+  padding-left: 10px;
+}

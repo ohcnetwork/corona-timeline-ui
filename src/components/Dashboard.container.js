@@ -1,33 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as _ from 'lodash';
+
+import PublicIcon from '@material-ui/icons/Public';
+import PlayArrowIcon from '@material-ui/icons/PlayArrow';
+import PauseIcon from '@material-ui/icons/Pause';
+import { Modal, Button, TextField } from '@material-ui/core';
+import Autocomplete from '@material-ui/lab/Autocomplete';
+import ToggleButton from '@material-ui/lab/ToggleButton';
+import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
+import { makeStyles } from '@material-ui/core/styles';
 import Slider from '@material-ui/core/Slider';
+
 import { mapToStackedLineView } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
-import PublicIcon from '@material-ui/icons/Public';
-import { Modal, IconButton, Button } from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
-import Chip from '@material-ui/core/Chip';
-import Autocomplete from '@material-ui/lab/Autocomplete';
-import TextField from '@material-ui/core/TextField';
 
 
 const _mapToChartData = (selectedCountries, countryLookup) => {
   const countryData = _.merge(_.map(selectedCountries, (country) => {
     return countryLookup[country];
   }));
-
-  // const sliderLookupData = _.range(countryData[0].data.length).map(index => {
-  //    return countryData.map((stackedLineItem) => {
-  //     if(stackedLineItem.name === 'other') {
-  //       return stackedLineItem;
-  //     }
-  //      return {
-  //        ...stackedLineItem,
-  //        data: stackedLineItem.data.slice(0, index),
-  //      };
-  //    })
-  // });
   return countryData;
 }
 const _mapToSlidPositionData = (countryLookup, index) => {
@@ -91,7 +83,8 @@ export function Dashboard() {
    const [chartData, setChartData] = useState([]);
    const [selectedDate, setSelectedDate] = useState('');
    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-   const [sliderValue, setSliderValue] = useState(0);
+   const [sliderValue, setSliderValue] = useState(1);
+   const [isPlayMode, setIsPlayMode] = useState(false);
   const classes = useStyles();
   // getModalStyle is not a pure function, we roll the style only on the first render
   const [modalStyle] = React.useState(getModalStyle);
@@ -104,7 +97,6 @@ export function Dashboard() {
            const reports = await retrieveCoronaWorldReports();
            const stackLineView = mapToStackedLineView(reports);
            setStackedMapData(stackLineView);
-
            const chartDataLookup = _mapToChartData(
              selectedCountries,
              stackLineView.currentData
@@ -115,6 +107,26 @@ export function Dashboard() {
        }
        retrieveWorldCoronaReports();
    }, []);
+   useEffect(() => {
+     console.log('useEffec isPlay', isPlayMode);
+
+     let interval;
+     if (!isPlayMode) {
+       clearInterval(interval);
+       return;
+     }
+
+     interval = setInterval(() => {
+       const newValue = sliderValue + 1;
+       setSliderValue(newValue);
+       onSliderChange(null, newValue);
+       console.log('setInterval')
+     }, 700);
+     if (!isPlayMode || sliderValue === stackedMapData?.categories.length) {
+       clearInterval(interval);
+     }
+     return () => clearInterval(interval);
+   },[chartData, sliderValue, isPlayMode])
 
   const sliderLabelFormat = (value)  => stackedMapData.categories[value - 1];
 
@@ -135,7 +147,7 @@ export function Dashboard() {
     setChartDataLookup(chartDataLookup);
     setChartData(_mapToSlidPositionData(chartDataLookup, 1));
     setSelectedDate(stackedMapData.categories[0]);
-    setSliderValue(0);
+    setSliderValue(1);
   };
   
    const _SettingsModal = () => {
@@ -181,15 +193,31 @@ export function Dashboard() {
      <div className="chart-container">
        <div className="add-countries">
          <Button
-           onClick={() => { setIsSettingsOpen(true) }}
+          className="add-country-btn"
+           onClick={() => { setIsSettingsOpen(true); setIsPlayMode(false); }}
            variant="contained"
            color="default"
            endIcon={<PublicIcon></PublicIcon>}
          >
            +
       </Button>
+      <div className="play-pause">
+           <ToggleButtonGroup
+             value={isPlayMode}
+             exclusive
+             onChange={(e, v) => setIsPlayMode(v)}
+             aria-label="text alignment"
+           >
+             <ToggleButton value={true} aria-label="play">
+               <PlayArrowIcon />
+             </ToggleButton>
+             <ToggleButton value={false} aria-label="play">
+               <PauseIcon />
+             </ToggleButton>
+           </ToggleButtonGroup>
+      </div>
+        
        </div>
-     
        <div className="stacked-line">
          <StackedLine
            categories={stackedMapData?.categories}
@@ -209,11 +237,12 @@ export function Dashboard() {
            valueLabelFormat={sliderLabelFormat}
          />
        </div>
-       <div class="settings-wrap">
+       <div className="settings-wrap">
          <div className="slider-selected-date">{selectedDate}</div>
        </div>
        <_SettingsModal></_SettingsModal>
      </div>
+     
    );
 
   function _updateWithNewIndex(index) {
