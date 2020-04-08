@@ -78,8 +78,8 @@ export function Dashboard() {
      categories: [''],
      currentData: { Italy: [], Spain: [], China: []},
    });
-  const persistedCountries = localStorage.getItem('selectedCountries').split(',');
-  const [selectedCountries, setSelectedCountries] = useState(persistedCountries ? persistedCountries : ['Spain','Italy']);
+  const persistedCountries = localStorage.getItem('selectedCountries');
+  const [selectedCountries, setSelectedCountries] = useState(persistedCountries ? persistedCountries.split(',') : ['Spain','Italy']);
    const [chartDataLookup, setChartDataLookup] = useState([[]]);
    const [chartData, setChartData] = useState([]);
    const [selectedDate, setSelectedDate] = useState('');
