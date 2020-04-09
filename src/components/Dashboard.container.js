@@ -76,10 +76,10 @@ const ITEM_PADDING_TOP = 8;
 export function Dashboard() {
    const [stackedMapData, setStackedMapData] = useState({
      categories: [''],
-     currentData: { Italy: [], Spain: [], China: []},
+     currentData: { Italy: [], US: [], China: []},
    });
   const persistedCountries = localStorage.getItem('selectedCountries');
-  const [selectedCountries, setSelectedCountries] = useState(persistedCountries ? persistedCountries.split(',') : ['Spain','Italy']);
+  const [selectedCountries, setSelectedCountries] = useState(persistedCountries ? persistedCountries.split(',') : ['US','China']);
    const [chartDataLookup, setChartDataLookup] = useState([[]]);
    const [chartData, setChartData] = useState([]);
    const [selectedDate, setSelectedDate] = useState('');
