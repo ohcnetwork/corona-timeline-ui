@@ -33,7 +33,7 @@ const _mapToSlidPositionData = (countryLookup, index) => {
        };
      })
 }
-const style = { width: '95%', 'marginLeft': 60, 'marginTop': 85};
+const style = { width: '95%', 'marginLeft': 10};
 
 function getModalStyle() {
   const top = 50;
@@ -122,7 +122,7 @@ export function Dashboard() {
        setSliderValue(newValue);
        onSliderChange(null, newValue);
        console.log('setInterval')
-     }, 700);
+     }, 800);
      if (!isPlayMode || sliderValue === stackedMapData?.categories.length) {
        clearInterval(interval);
      }
@@ -203,7 +203,16 @@ export function Dashboard() {
          >
            +
       </Button>
-      <div className="play-pause">
+       </div>
+       <div className="stacked-line">
+         <StackedLine
+           categories={stackedMapData?.categories}
+           data={chartData}
+           chartRef={chartRef}
+         ></StackedLine>
+       </div>
+       <div className="footer">
+         <div className="play-pause">
            <ToggleButtonGroup
              value={isPlayMode}
              exclusive
@@ -217,30 +226,22 @@ export function Dashboard() {
                <PauseIcon />
              </ToggleButton>
            </ToggleButtonGroup>
-      </div>
-        
-       </div>
-       <div className="stacked-line">
-         <StackedLine
-           categories={stackedMapData?.categories}
-           data={chartData}
-           chartRef={chartRef}
-         ></StackedLine>
-       </div>
-       <div style={style}>
-         <Slider
-           min={0}
-           value={sliderValue}
-           defaultValue={1}
-           max={stackedMapData?.categories?.length}
-           ref={sliderRef}
-           valueLabelDisplay="off"
-           onChange={onSliderChange}
-           valueLabelFormat={sliderLabelFormat}
-         />
-       </div>
-       <div className="settings-wrap">
-         <div className="slider-selected-date">{selectedDate}</div>
+         </div>
+         <div className="slider-with-date">
+            <div style={style}>
+              <Slider
+                min={0}
+                value={sliderValue}
+                defaultValue={1}
+                max={stackedMapData?.categories?.length}
+                ref={sliderRef}
+                valueLabelDisplay="off"
+                onChange={onSliderChange}
+                valueLabelFormat={sliderLabelFormat}
+              />
+            </div>
+            <div className="slider-selected-date">{selectedDate}</div>
+          </div>
        </div>
        <_SettingsModal></_SettingsModal>
      </div>
