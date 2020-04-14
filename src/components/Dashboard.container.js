@@ -122,7 +122,7 @@ export function Dashboard() {
        setSliderValue(newValue);
        onSliderChange(null, newValue);
        console.log('setInterval')
-     }, 800);
+     }, 600);
      if (!isPlayMode || sliderValue === stackedMapData?.categories.length) {
        clearInterval(interval);
      }

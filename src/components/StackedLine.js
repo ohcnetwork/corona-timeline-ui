@@ -5,7 +5,8 @@ import HighchartsReact from 'highcharts-react-official'
 export function StackedLine({categories, data = [], chartRef}) {
     const opts = {
       chart: {
-        type: 'line'
+        type: 'line',
+        animation: false
       },
       title: {
         text: 'World Corona Timeline'
