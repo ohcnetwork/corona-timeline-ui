@@ -152,7 +152,7 @@ export function Dashboard() {
     setSliderValue(1);
   };
   
-   const _SettingsModal = () => {
+   const SettingsModal = () => {
     return <Modal
        open={isSettingsOpen}
        onClose={onModalClose}
@@ -243,7 +243,7 @@ export function Dashboard() {
             <div className="slider-selected-date">{selectedDate}</div>
           </div>
        </div>
-       <_SettingsModal></_SettingsModal>
+       <SettingsModal></SettingsModal>
      </div>
      
    );
