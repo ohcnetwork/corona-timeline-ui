@@ -4,15 +4,15 @@ import * as _ from 'lodash';
 import PublicIcon from '@material-ui/icons/Public';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
-import { Modal, Button, TextField } from '@material-ui/core';
+import { Modal, Button, TextField, Radio } from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 import { makeStyles } from '@material-ui/core/styles';
 import Slider from '@material-ui/core/Slider';
 
-import { mapToStackedLineView } from '../mappers/chart-view.mapper';
-import { retrieveCoronaWorldReports } from '../api/corona-reports.data.service';
+import { mapToStackedLineView, mapIndiaStatToStackedLineView } from '../mappers/chart-view.mapper';
+import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
 
 
@@ -24,9 +24,6 @@ const _mapToChartData = (selectedCountries, countryLookup) => {
 }
 const _mapToSlidPositionData = (countryLookup, index) => {
   return countryLookup.map((stackedLineItem) => {
-      if(stackedLineItem.name === 'other') {
-        return stackedLineItem;
-      }
        return {
          ...stackedLineItem,
          data: stackedLineItem.data.slice(0, index),
@@ -74,30 +71,49 @@ const useStyles = makeStyles((theme) => ({
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
 export function Dashboard() {
-   const [stackedMapData, setStackedMapData] = useState({
-     categories: [''],
-     currentData: { Italy: [], US: [], China: []},
-   });
+  const initialStackedData = {
+    categories: [''],
+    currentData: {},
+  };
+  const [stackedMapData, setStackedMapData] = useState(initialStackedData);
   const persistedCountries = localStorage.getItem('selectedCountries');
-  const [selectedCountries, setSelectedCountries] = useState(persistedCountries ? persistedCountries.split(',') : ['US','China']);
-   const [chartDataLookup, setChartDataLookup] = useState([[]]);
-   const [chartData, setChartData] = useState([]);
-   const [selectedDate, setSelectedDate] = useState('');
-   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-   const [sliderValue, setSliderValue] = useState(1);
-   const [isPlayMode, setIsPlayMode] = useState(true);
+  const persistedMode = persistedCountries ? localStorage.getItem('selectedMode') : null;
+  const [selectedCountries, setSelectedCountries] = useState(persistedCountries && persistedMode ? persistedCountries.split(',') : ['Delhi','Kerala']);
+  const [chartDataLookup, setChartDataLookup] = useState([[]]);
+  const [chartData, setChartData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [sliderValue, setSliderValue] = useState(1);
+  const [isPlayMode, setIsPlayMode] = useState(true);
+  const [mode, setMode] = useState(persistedMode ? persistedMode : 'India');
   const classes = useStyles();
   // getModalStyle is not a pure function, we roll the style only on the first render
   const [modalStyle] = React.useState(getModalStyle);
 
    const chartRef = useRef();
    const sliderRef = useRef();
-
+   const setChartDataBasedOnMode = async() => {
+    let stackLineView
+        if(mode === 'India') {
+          const reports = await retrieveCoronaIndiaStats();
+          stackLineView = mapIndiaStatToStackedLineView(reports);
+          setStackedMapData(stackLineView);
+        } else {
+          const reports = await retrieveCoronaWorldReports();
+          stackLineView = mapToStackedLineView(reports);
+          setStackedMapData(stackLineView);
+        }
+        return stackLineView
+   }
+   useEffect(() => {
+     async function _setChartDataBasedOnMode() {
+       await setChartDataBasedOnMode();
+     };
+     _setChartDataBasedOnMode();
+   }, [mode])
    useEffect(() => {
        async function retrieveWorldCoronaReports() {
-           const reports = await retrieveCoronaWorldReports();
-           const stackLineView = mapToStackedLineView(reports);
-           setStackedMapData(stackLineView);
+           const stackLineView = await setChartDataBasedOnMode();
            const chartDataLookup = _mapToChartData(
              selectedCountries,
              stackLineView.currentData
@@ -108,15 +124,14 @@ export function Dashboard() {
        }
        retrieveWorldCoronaReports();
    }, []);
+   
+   // animation play and pause
    useEffect(() => {
-     console.log('useEffec isPlay', isPlayMode);
-
      let interval;
      if (!isPlayMode) {
        clearInterval(interval);
        return;
      }
-
      interval = setInterval(() => {
        const newValue = sliderValue + 1;
        setSliderValue(newValue);
@@ -151,7 +166,16 @@ export function Dashboard() {
     setSelectedDate(stackedMapData.categories[0]);
     setSliderValue(1);
   };
-  
+  const  onModeSelection =(event) => {
+    setSelectedCountries([]);
+    setSelectedDate('');
+    setSliderValue(1);
+    setStackedMapData(initialStackedData);
+    setChartData([]);
+    setMode(event.target.value);
+    localStorage.setItem('selectedMode', event.target.value);
+    localStorage.setItem('selectedCountries', '');
+  }
    const SettingsModal = () => {
     return <Modal
        open={isSettingsOpen}
@@ -160,6 +184,24 @@ export function Dashboard() {
        aria-describedby="simple-modal-description"
      >
       <div style={modalStyle} className={classes.paper}>
+        <Radio
+          checked={mode === 'India'}
+          onChange={onModeSelection}
+          value="India"
+          name="radio-button-demo"
+          inputProps={{ 'aria-label': 'India' }}
+        />
+        India
+        <Radio
+          checked={mode === 'International'}
+          onChange={onModeSelection}
+          value="International"
+          name="radio-button-demo"
+          inputProps={{ 'aria-label': 'International' }}
+        />
+        International
+        <br/>
+        <br/>
        <Tags></Tags>
        </div>
      </Modal>
@@ -167,7 +209,7 @@ export function Dashboard() {
 
   function Tags() {
     const classes = useStyles();
-
+    const label = mode === 'India' ? 'States' : 'Countries';
     return (
       <div className={classes.root}>
         <Autocomplete
@@ -183,7 +225,7 @@ export function Dashboard() {
             <TextField
               {...params}
               variant="standard"
-              label="Select Countries"
+              label={`Select ${label}`}
               placeholder="Countries"
             />
           )}

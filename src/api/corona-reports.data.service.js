@@ -10,3 +10,14 @@ export const retrieveCoronaWorldReports = async () => {
     ? countryWiseData.json()
     : {};
 }
+
+
+export const retrieveCoronaIndiaStats = async () => {
+    const [err, indiaData] = await to(fetch('https://api.rootnet.in/covid19-in/stats/daily'));
+    if (err) {
+        return Promise.resolve({});
+    }
+    return indiaData
+        ? indiaData.json()
+        : {};
+}
