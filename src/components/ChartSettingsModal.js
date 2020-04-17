@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect} from 'react';
 
-import { Modal, TextField, Radio } from '@material-ui/core';
+import { Modal, TextField, Radio, Button } from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -42,10 +42,31 @@ function getModalStyle() {
     };
 }
 
-export const ChartSettingsModal = ({ mode, onModeSelection, isModalOpen, onModalClose, placeStatMap, selectedCountries, onCountriesSelection }) => {
+export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, placeStatMap, selectedCountries, onApplySettings }) => {
     const classes = useStyles();
-    const label = mode === 'India' ? 'States' : 'Countries';
     const [modalStyle] = React.useState(getModalStyle);
+    const [_mode, setMode] = useState('');
+    const [_selectedCountries, setSelectedCountries] = useState([]);
+    const label = _mode === 'India' ? 'States' : 'Countries';
+
+
+    useEffect(() => {
+        setMode(mode);
+        setSelectedCountries(selectedCountries);
+    }, [mode, selectedCountries, isModalOpen])
+    const onApply = () => {
+        onApplySettings({mode: _mode, selectedCountries: _selectedCountries})
+    }
+    const onCountriesSelection = (event, countries) => {
+        setSelectedCountries(countries);
+    }
+    const onModeSelection = (event) => {
+        setSelectedCountries([]);
+        setMode(event.target.value);
+    }
+    const onSelectAll = () => {
+        setSelectedCountries(Object.keys(placeStatMap));
+    }
     return <Modal
         open={isModalOpen}
         onClose={onModalClose}
@@ -54,14 +75,14 @@ export const ChartSettingsModal = ({ mode, onModeSelection, isModalOpen, onModal
     >
         <div style={modalStyle} className={classes.paper}>
             <Radio
-                checked={mode === 'India'}
+                checked={_mode === 'India'}
                 onChange={onModeSelection}
                 value="India"
                 name="radio-button-demo"
                 inputProps={{ 'aria-label': 'India' }}
             />India
             <Radio
-                checked={mode === 'International'}
+                checked={_mode === 'International'}
                 onChange={onModeSelection}
                 value="International"
                 name="radio-button-demo"
@@ -73,12 +94,13 @@ export const ChartSettingsModal = ({ mode, onModeSelection, isModalOpen, onModal
                 <Autocomplete
                     multiple
                     id="tags-standard"
+                    limitTags={5}
                     options={Object.keys(placeStatMap)}
                     getOptionLabel={(option) => option}
-                    defaultValue={selectedCountries}
                     onChange={onCountriesSelection}
                     autoHighlight={true}
                     openOnFocus={true}
+                    value={_selectedCountries}
                     renderInput={(params) => (
                         <TextField
                             {...params}
@@ -89,6 +111,8 @@ export const ChartSettingsModal = ({ mode, onModeSelection, isModalOpen, onModal
                     )}
                 />
             </div>
+            <Button variant="contained" onClick={onSelectAll}>SelectAll</Button>
+            <Button variant="contained" onClick={onApply}>Apply</Button>
         </div>
     </Modal>
 }

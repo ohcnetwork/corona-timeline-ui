@@ -8,7 +8,7 @@ import PauseIcon from '@material-ui/icons/Pause';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import * as _ from 'lodash';
 
-import { mapWorldStatToChartSeries, mapIndiaStatToChartSeries, mapToSelectedChartSeries } from '../mappers/chart-view.mapper';
+import { mapWorldStatToChartSeries, mapIndiaStatToChartSeries, mapToSelectedChartSeries as mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
 import { ChartSettingsModal} from './ChartSettingsModal';
@@ -17,7 +17,7 @@ const _mapDataWithSliderPosition = (countryLookup, index) => {
   return countryLookup.map((stackedLineItem) => {
        return {
          ...stackedLineItem,
-         data: stackedLineItem.data.slice(0, index),
+         data: _.get(stackedLineItem, 'data', []).slice(0, index),
        };
      })
 }
@@ -65,12 +65,12 @@ export function Dashboard() {
    useEffect(() => {
        async function retrieveWorldCoronaReports() {
            const chartSeries = await chartDataBasedOnMode();
-           const chartDataLookup = mapToSelectedChartSeries(
+           const selectedLocSeries = mapToSelectedLocChartSeries(
              selectedCountries,
              chartSeries.placeStatMap
            );
-           setChartDataLookup(chartDataLookup);
-           setChartData(_mapDataWithSliderPosition(chartDataLookup, 1));
+           setChartDataLookup(selectedLocSeries);
+           setChartData(_mapDataWithSliderPosition(selectedLocSeries, 1));
            setSelectedDate(chartSeries.dates[0]);
        }
        retrieveWorldCoronaReports();
@@ -105,27 +105,30 @@ export function Dashboard() {
   const onModalClose = () => {
     setIsSettingsOpen(false);
   }
-  const onCountriesSelection = (event, countries) => {
-    setSelectedCountries(countries);
-    localStorage.setItem('selectedCountries', countries);
-    const chartDataLookup = mapToSelectedChartSeries(
-      countries,
+  // const  onModeSelection =(event) => {
+  //   setSelectedCountries([]);
+  //   setSelectedDate('');
+  //   setSliderValue(1);
+  //   setChartSeries(initialStackedData);
+  //   setChartData([]);
+  //   setMode(event.target.value);
+  //   localStorage.setItem('selectedMode', event.target.value);
+  //   localStorage.setItem('selectedCountries', '');
+  // }
+  const onApplySettings = ({mode, selectedCountries}) => {
+    setIsSettingsOpen(false);
+    setSelectedCountries(selectedCountries);
+    setMode(mode);
+    localStorage.setItem('selectedMode', mode)
+    localStorage.setItem('selectedCountries', selectedCountries);
+    const chartDataLookup = mapToSelectedLocChartSeries(
+      selectedCountries,
       chartSeries.placeStatMap
     );
     setChartDataLookup(chartDataLookup);
     setChartData(_mapDataWithSliderPosition(chartDataLookup, 1));
     setSelectedDate(chartSeries.dates[0]);
     setSliderValue(1);
-  };
-  const  onModeSelection =(event) => {
-    setSelectedCountries([]);
-    setSelectedDate('');
-    setSliderValue(1);
-    setChartSeries(initialStackedData);
-    setChartData([]);
-    setMode(event.target.value);
-    localStorage.setItem('selectedMode', event.target.value);
-    localStorage.setItem('selectedCountries', '');
   }
 
    return (
@@ -185,9 +188,8 @@ export function Dashboard() {
         isModalOpen={isSettingsOpen}
         placeStatMap={chartSeries.placeStatMap}
         selectedCountries={selectedCountries}
-        onModeSelection={onModeSelection}
         onModalClose={onModalClose}
-        onCountriesSelection={onCountriesSelection}
+        onApplySettings={onApplySettings}
        ></ChartSettingsModal>
      </div>
      
