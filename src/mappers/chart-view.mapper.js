@@ -15,16 +15,11 @@ export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
     const categories = indiaDailyStatResponse.data.map(d => d.day);
     const initialStateLookup = _.chain(indiaDailyStatResponse)
                                 .get('data', [])
-                                .tap(d => console.log('getData', d))
                                 .map('regional')
                                 .flatten()
-        .tap(d => console.log('regionalMerge', d))
                                 .map('loc').uniq()
-        .tap(d => console.log('loc', d))
                                 .map(state => ({name: state, data:[]}))
-        .tap(d => console.log('nameDataMap', d))
                                 .keyBy('name').value();
-    console.log('initialStateLookup', initialStateLookup);
 
     const currentData = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
         data.regional.forEach((region) => {
