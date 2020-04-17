@@ -11,17 +11,29 @@ export const mapToStackedLineView = (data) => {
     return { categories, currentData };
 }
 
-export const mapIndiaStatToStackedLineView = (data) => {
-    const currentData = data.data.reduce((lookup, data) => {
+export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
+    const categories = indiaDailyStatResponse.data.map(d => d.day);
+    const initialStateLookup = _.chain(indiaDailyStatResponse)
+                                .get('data', [])
+                                .map('regional')
+                                .flatten()
+                                .map('loc').uniq()
+                                .map(state => ({name: state, data:[]}))
+                                .keyBy('name').value();
+
+    const currentData = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
         data.regional.forEach((region) => {
-            if (!lookup[region.loc]) {
-                lookup[region.loc] = { name: region.loc, data: [region.totalConfirmed] }
-            }
             lookup[region.loc].data.push(region.totalConfirmed);
         })
+        
+        // add previous totalConfirmed || 0 for missing state data
+        _.each(lookup, (lookupItem) => {
+            lookup[lookupItem.name] = !!lookupItem.data[i] 
+            ? lookupItem 
+            : { ...lookupItem, data: [...lookupItem.data, lookupItem.data[i-1] || 0]}
+        });
         return lookup;
-    }, {});
-    const categories = data.data.map(d => d.day);
+    }, initialStateLookup);
     return {categories, currentData};
 }
     
