@@ -1,18 +1,18 @@
 import * as _ from 'lodash';
 
-export const mapToStackedLineView = (data) => {
-    const categories = _.map(data.China, 'date');
-    const currentData = _.keyBy(_.map(data, (report, key) => {
+export const mapWorldStatToChartSeries = (data) => {
+    const dates = _.map(data.China, 'date');
+    const placeStatMap = _.keyBy(_.map(data, (report, key) => {
         return {
             name: key,
             data: _.map(report, 'confirmed')
         }
     }), 'name');
-    return { categories, currentData };
+    return { dates, placeStatMap };
 }
 
-export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
-    const categories = indiaDailyStatResponse.data.map(d => d.day);
+export const mapIndiaStatToChartSeries = (indiaDailyStatResponse) => {
+    const dates = indiaDailyStatResponse.data.map(d => d.day);
     const initialStateLookup = _.chain(indiaDailyStatResponse)
                                 .get('data', [])
                                 .map('regional')
@@ -21,7 +21,7 @@ export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
                                 .map(state => ({name: state, data:[]}))
                                 .keyBy('name').value();
 
-    const currentData = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
+    const placeStatMap = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
         data.regional.forEach((region) => {
             lookup[region.loc].data.push(region.totalConfirmed);
         })
@@ -34,6 +34,8 @@ export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
         });
         return lookup;
     }, initialStateLookup);
-    return {categories, currentData};
+    return {dates, placeStatMap};
 }
-    
+
+export const mapToSelectedChartSeries = (selectedPlaces, placeStatMap) =>
+    _.merge( _.map(selectedPlaces, (country) =>  placeStatMap[country]));
