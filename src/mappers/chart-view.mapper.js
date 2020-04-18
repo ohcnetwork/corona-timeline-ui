@@ -2,13 +2,13 @@ import * as _ from 'lodash';
 
 export const mapWorldStatToChartSeries = (data) => {
     const dates = _.map(data.China, 'date');
-    const placeStatMap = _.keyBy(_.map(data, (report, key) => {
+    const locStatMap = _.keyBy(_.map(data, (report, key) => {
         return {
-            name: key,
+            name: key.replace(',',''),
             data: _.map(report, 'confirmed')
         }
     }), 'name');
-    return { dates, placeStatMap };
+    return { dates, locStatMap };
 }
 
 export const mapIndiaStatToChartSeries = (indiaDailyStatResponse) => {
@@ -21,7 +21,7 @@ export const mapIndiaStatToChartSeries = (indiaDailyStatResponse) => {
                                 .map(state => ({name: state, data:[]}))
                                 .keyBy('name').value();
 
-    const placeStatMap = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
+    const locStatMap = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
         data.regional.forEach((region) => {
             lookup[region.loc].data.push(region.totalConfirmed);
         })
@@ -34,8 +34,12 @@ export const mapIndiaStatToChartSeries = (indiaDailyStatResponse) => {
         });
         return lookup;
     }, initialStateLookup);
-    return {dates, placeStatMap};
+    return {dates, locStatMap};
 }
 
-export const mapToSelectedChartSeries = (selectedPlaces, placeStatMap) =>
-    _.merge( _.map(selectedPlaces, (country) =>  placeStatMap[country]));
+export const mapToSelectedLocChartSeries = (selectedPlaces, chartSeries) => {
+  const series =   _.map(selectedPlaces, (country) => {
+    return  chartSeries.locStatMap[country];
+    });
+  return {dates: chartSeries.dates, series};
+}

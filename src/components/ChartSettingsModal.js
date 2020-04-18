@@ -43,30 +43,30 @@ function getModalStyle() {
     };
 }
 
-export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, placeStatMap, selectedCountries, onApplySettings }) => {
+export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, onModeChange,
+                                    locations, selectedLocs, onApplySettings }) => {
     const classes = useStyles();
     const [modalStyle] = React.useState(getModalStyle);
     const [_mode, setMode] = useState('');
-    const [_selectedCountries, setSelectedCountries] = useState([]);
+    const [_selectedLocs, setSelectedLocs] = useState([]);
     const label = _mode === 'India' ? 'States' : 'Countries';
-
-
     useEffect(() => {
         setMode(mode);
-        setSelectedCountries(selectedCountries);
-    }, [mode, selectedCountries, isModalOpen])
+        setSelectedLocs(selectedLocs);
+    }, [mode, selectedLocs, isModalOpen])
     const onApply = () => {
-        onApplySettings({mode: _mode, selectedCountries: _selectedCountries})
+        onApplySettings({mode: _mode, selectedLocs: _selectedLocs})
     }
     const onCountriesSelection = (event, countries) => {
-        setSelectedCountries(countries);
+        setSelectedLocs(countries);
     }
     const onModeSelection = (event) => {
-        setSelectedCountries([]);
+        setSelectedLocs([]);
         setMode(event.target.value);
+        onModeChange(event.target.value);
     }
     const onSelectAll = () => {
-        setSelectedCountries(Object.keys(placeStatMap));
+        setSelectedLocs(locations);
     }
     return <Modal
         open={isModalOpen}
@@ -96,12 +96,12 @@ export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, placeStatM
                     multiple
                     id="tags-standard"
                     limitTags={5}
-                    options={Object.keys(placeStatMap)}
+                    options={locations}
                     getOptionLabel={(option) => option}
                     onChange={onCountriesSelection}
                     autoHighlight={true}
                     openOnFocus={true}
-                    value={_selectedCountries}
+                    value={_selectedLocs}
                     renderInput={(params) => (
                         <TextField
                             {...params}
@@ -113,7 +113,9 @@ export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, placeStatM
                 />
             </div>
             <div className="settings-btn">
-                <Button variant="contained" onClick={onSelectAll}>SelectAll</Button>
+                {/* TODO enable after fixing performance issue, now selecting all data point is
+                    causing jangy animation
+                 <Button variant="contained" onClick={onSelectAll}>SelectAll</Button> */}
                 <Button variant="contained" onClick={onApply}>Apply</Button>
             </div>
         </div>

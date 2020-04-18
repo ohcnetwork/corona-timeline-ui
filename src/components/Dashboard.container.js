@@ -1,81 +1,65 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-import { Button, TextField, Slider } from '@material-ui/core';
+import { Button, Slider } from '@material-ui/core';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 import PublicIcon from '@material-ui/icons/Public';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
 import ToggleButton from '@material-ui/lab/ToggleButton';
-import * as _ from 'lodash';
 
-import { mapWorldStatToChartSeries, mapIndiaStatToChartSeries, mapToSelectedChartSeries as mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
+import { mapWorldStatToChartSeries, mapIndiaStatToChartSeries, mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
 import { ChartSettingsModal} from './ChartSettingsModal';
 
-const _mapDataWithSliderPosition = (countryLookup, index) => {
-  return countryLookup.map((stackedLineItem) => {
-       return {
-         ...stackedLineItem,
-         data: _.get(stackedLineItem, 'data', []).slice(0, index),
-       };
-     })
-}
 const initialStackedData = {
   dates: [''],
-  placeStatMap: {},
+  locStatMap: {},
 };
+
+const retrieveChartSeries = async (mode) => {
+  let chartSeries
+  if (mode === 'India') {
+    const indiaStats = await retrieveCoronaIndiaStats();
+    chartSeries = mapIndiaStatToChartSeries(indiaStats);
+  } else {
+    const worldStats = await retrieveCoronaWorldReports();
+    chartSeries = mapWorldStatToChartSeries(worldStats);
+  }
+  return chartSeries
+}
 export function Dashboard() {
 
-  const chartRef = useRef();
   const sliderRef = useRef();
-  const persistedCountries = localStorage.getItem('selectedCountries');
-  const persistedMode = persistedCountries ? localStorage.getItem('selectedMode') : null;
+  const persistedLocs = localStorage.getItem('selectedLocs');
+  const persistedMode = persistedLocs ? localStorage.getItem('selectedMode') : null;
 
-  const [selectedCountries, setSelectedCountries] = useState(persistedCountries && persistedMode ? persistedCountries.split(',') : ['Delhi', 'Kerala']);
+  const [selectedLocs, SetSelectedLocs] = useState(persistedLocs && persistedMode ? persistedLocs.split(',') : ['Delhi', 'Kerala']);
   const [chartSeries, setChartSeries] = useState(initialStackedData);
-  const [chartDataLookup, setChartDataLookup] = useState([[]]);
-  const [chartData, setChartData] = useState([]);
+  const [selectedLocSeries, setSelectedLocSeries] = useState({dates:[], series:[{name:'', data: []}]});
   const [selectedDate, setSelectedDate] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [sliderValue, setSliderValue] = useState(1);
-  const [isPlayMode, setIsPlayMode] = useState(true);
+  const [isPlayMode, setIsPlayMode] = useState(false);
   const [mode, setMode] = useState(persistedMode ? persistedMode : 'India');
-
-  const chartDataBasedOnMode = async() => {
-    let chartSeries
-        if(mode === 'India') {
-          const indiaStats = await retrieveCoronaIndiaStats();
-          chartSeries = mapIndiaStatToChartSeries(indiaStats);
-          setChartSeries(chartSeries);
-        } else {
-          const worldStats = await retrieveCoronaWorldReports();
-          chartSeries = mapWorldStatToChartSeries(worldStats);
-          setChartSeries(chartSeries);
-        }
-        return chartSeries
-   }
-   useEffect(() => {
-     async function _setChartDataBasedOnMode() {
-       await chartDataBasedOnMode();
-     };
-     _setChartDataBasedOnMode();
-   }, [mode])
-
-   useEffect(() => {
-       async function retrieveWorldCoronaReports() {
-           const chartSeries = await chartDataBasedOnMode();
-           const selectedLocSeries = mapToSelectedLocChartSeries(
-             selectedCountries,
-             chartSeries.placeStatMap
-           );
-           setChartDataLookup(selectedLocSeries);
-           setChartData(_mapDataWithSliderPosition(selectedLocSeries, 1));
-           setSelectedDate(chartSeries.dates[0]);
-       }
-       retrieveWorldCoronaReports();
-   }, []);
-   
+  async function _setChartDataBasedOnMode(tempMode = null) {
+    const chartSeries = await retrieveChartSeries(tempMode ? tempMode : mode);
+    setChartSeries(chartSeries);
+  };
+  useEffect(() => {
+    async function initiateCoronaStats() {
+      const chartSeries = await retrieveChartSeries(mode);
+      const selectedLocSeries = mapToSelectedLocChartSeries(
+        selectedLocs,
+        chartSeries
+      );
+      setChartSeries(chartSeries);
+      setSelectedLocSeries(selectedLocSeries);
+      setSelectedDate(selectedLocSeries.dates[0]);
+      setIsPlayMode(true);
+    }
+    initiateCoronaStats();
+  }, []);
    // animation play and pause
    useEffect(() => {
      let interval;
@@ -87,48 +71,42 @@ export function Dashboard() {
        const newValue = sliderValue + 1;
        setSliderValue(newValue);
        onSliderChange(null, newValue);
-       console.log('setInterval')
      }, 600);
-     if (!isPlayMode || sliderValue === chartSeries?.dates.length) {
+     if (!isPlayMode || sliderValue === selectedLocSeries?.dates.length) {
        clearInterval(interval);
      }
      return () => clearInterval(interval);
-   },[chartData, sliderValue, isPlayMode])
+   },[sliderValue, isPlayMode])
 
-  const sliderLabelFormat = (value)  => chartSeries.dates[value - 1];
+  const sliderLabelFormat = (value) => selectedLocSeries.dates[value - 1];
 
   const onSliderChange =(event, index) => {
     setSliderValue(index);
-    _updateWithNewIndex(index);
-    setSelectedDate(chartSeries.dates[index - 1]);
+    setSelectedDate(selectedLocSeries.dates[index - 1]);
   };
+  const onModalOpen = () => {
+    _setChartDataBasedOnMode();
+    setIsSettingsOpen(true); 
+    setIsPlayMode(false);
+  }
   const onModalClose = () => {
     setIsSettingsOpen(false);
   }
-  // const  onModeSelection =(event) => {
-  //   setSelectedCountries([]);
-  //   setSelectedDate('');
-  //   setSliderValue(1);
-  //   setChartSeries(initialStackedData);
-  //   setChartData([]);
-  //   setMode(event.target.value);
-  //   localStorage.setItem('selectedMode', event.target.value);
-  //   localStorage.setItem('selectedCountries', '');
-  // }
-  const onApplySettings = ({mode, selectedCountries}) => {
+  
+  const onApplySettings = ({mode, selectedLocs}) => {
     setIsSettingsOpen(false);
-    setSelectedCountries(selectedCountries);
-    setMode(mode);
-    localStorage.setItem('selectedMode', mode)
-    localStorage.setItem('selectedCountries', selectedCountries);
-    const chartDataLookup = mapToSelectedLocChartSeries(
-      selectedCountries,
-      chartSeries.placeStatMap
+    const selectedLocSeries = mapToSelectedLocChartSeries(
+      selectedLocs,
+      chartSeries
     );
-    setChartDataLookup(chartDataLookup);
-    setChartData(_mapDataWithSliderPosition(chartDataLookup, 1));
+    setSelectedLocSeries(selectedLocSeries);
     setSelectedDate(chartSeries.dates[0]);
     setSliderValue(1);
+    setMode(mode);
+    SetSelectedLocs(selectedLocs);
+    setIsPlayMode(true);
+    localStorage.setItem('selectedMode', mode)
+    localStorage.setItem('selectedLocs', selectedLocs);
   }
 
    return (
@@ -136,7 +114,7 @@ export function Dashboard() {
        <div className="add-countries">
          <Button
           className="add-country-btn"
-           onClick={() => { setIsSettingsOpen(true); setIsPlayMode(false); }}
+           onClick={onModalOpen}
            variant="contained"
            color="default"
            endIcon={<PublicIcon></PublicIcon>}
@@ -146,9 +124,10 @@ export function Dashboard() {
        </div>
        <div className="stacked-line">
          <StackedLine
-           categories={chartSeries?.dates}
-           data={chartData}
-           chartRef={chartRef}
+           categories={selectedLocSeries.dates}
+           series={selectedLocSeries.series}
+           index={sliderValue}
+           mode={mode}
          ></StackedLine>
        </div>
        <div className="footer">
@@ -173,7 +152,7 @@ export function Dashboard() {
                 min={0}
                 value={sliderValue}
                 defaultValue={1}
-                max={chartSeries?.dates?.length}
+                max={selectedLocSeries?.dates?.length}
                 ref={sliderRef}
                 valueLabelDisplay="off"
                 onChange={onSliderChange}
@@ -186,42 +165,12 @@ export function Dashboard() {
        <ChartSettingsModal
         mode={mode}
         isModalOpen={isSettingsOpen}
-        placeStatMap={chartSeries.placeStatMap}
-        selectedCountries={selectedCountries}
+        selectedLocs={selectedLocs}
+        locations={Object.keys(chartSeries.locStatMap)}
         onModalClose={onModalClose}
         onApplySettings={onApplySettings}
+        onModeChange={(tempMode) => _setChartDataBasedOnMode(tempMode)}
        ></ChartSettingsModal>
-     </div>
-     
+     </div> 
    );
-
-  function _updateWithNewIndex(index) {
-    const chartSeries = chartRef.current.chart.series;
-    if (_.isEmpty(chartSeries)) {
-      return;
-    }
-    const operation = index > chartSeries[0].data.length
-      ? { isIndexLess: false, rangeArray: _.range(chartSeries[0].data.length, index) }
-      : { isIndexLess: true, rangeArray: _.range(chartSeries[0].data.length, index - 1) };
-    // const isAutoRedraw = operation.rangeArray.length < 3;
-    const isAutoRedraw = false;
-    chartSeries.forEach((series, i) => {
-      if (operation.isIndexLess) {
-        operation.rangeArray.forEach(remIndex => {
-          series.removePoint(remIndex, isAutoRedraw);
-        });
-        return;
-      }
-      if (operation.rangeArray.length === 1) {
-        series.addPoint([operation.rangeArray[0], chartDataLookup[i].data[operation.rangeArray[0]]], isAutoRedraw);
-        return;
-      }
-      operation.rangeArray.forEach(addIndex => {
-        series.addPoint([addIndex, chartDataLookup[i].data[addIndex]], isAutoRedraw);
-      });
-    });
-    if (!isAutoRedraw) {
-      chartRef.current.chart.redraw();
-    }
-  }
 }
