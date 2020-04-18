@@ -32,3 +32,11 @@
 .footer {
   display: flex;
 }
+.settings-btn {
+  display: flex;
+  margin-top: 20px;
+  margin-top: 15px;
+}
+.settings-btn > Button {
+  margin-right: 5px;
+}

@@ -9,6 +9,7 @@ const useStyles = makeStyles((theme) => ({
         position: 'absolute',
         width: 600,
         height: 400,
+        'overflow-y': 'auto',
         backgroundColor: theme.palette.background.paper,
         border: '2px solid #000',
         boxShadow: theme.shadows[5],
@@ -111,8 +112,10 @@ export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, placeStatM
                     )}
                 />
             </div>
-            <Button variant="contained" onClick={onSelectAll}>SelectAll</Button>
-            <Button variant="contained" onClick={onApply}>Apply</Button>
+            <div className="settings-btn">
+                <Button variant="contained" onClick={onSelectAll}>SelectAll</Button>
+                <Button variant="contained" onClick={onApply}>Apply</Button>
+            </div>
         </div>
     </Modal>
 }
