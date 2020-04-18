@@ -1,18 +1,18 @@
 import * as _ from 'lodash';
 
-export const mapToStackedLineView = (data) => {
-    const categories = _.map(data.China, 'date');
-    const currentData = _.keyBy(_.map(data, (report, key) => {
+export const mapWorldStatToChartSeries = (data) => {
+    const dates = _.map(data.China, 'date');
+    const locStatMap = _.keyBy(_.map(data, (report, key) => {
         return {
-            name: key,
+            name: key.replace(',',''),
             data: _.map(report, 'confirmed')
         }
     }), 'name');
-    return { categories, currentData };
+    return { dates, locStatMap };
 }
 
-export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
-    const categories = indiaDailyStatResponse.data.map(d => d.day);
+export const mapIndiaStatToChartSeries = (indiaDailyStatResponse) => {
+    const dates = indiaDailyStatResponse.data.map(d => d.day);
     const initialStateLookup = _.chain(indiaDailyStatResponse)
                                 .get('data', [])
                                 .map('regional')
@@ -21,7 +21,7 @@ export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
                                 .map(state => ({name: state, data:[]}))
                                 .keyBy('name').value();
 
-    const currentData = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
+    const locStatMap = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
         data.regional.forEach((region) => {
             lookup[region.loc].data.push(region.totalConfirmed);
         })
@@ -34,6 +34,12 @@ export const mapIndiaStatToStackedLineView = (indiaDailyStatResponse) => {
         });
         return lookup;
     }, initialStateLookup);
-    return {categories, currentData};
+    return {dates, locStatMap};
 }
-    
+
+export const mapToSelectedLocChartSeries = (selectedPlaces, chartSeries) => {
+  const series =   _.map(selectedPlaces, (country) => {
+    return  chartSeries.locStatMap[country];
+    });
+  return {dates: chartSeries.dates, series};
+}
