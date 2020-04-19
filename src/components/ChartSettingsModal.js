@@ -7,28 +7,14 @@ import { makeStyles } from '@material-ui/core/styles';
 const useStyles = makeStyles((theme) => ({
     paper: {
         position: 'absolute',
-        width: 600,
-        height: 400,
+        width: '70vw',
+        height: '70vh',
         'overflow-y': 'auto',
         backgroundColor: theme.palette.background.paper,
         border: '2px solid #000',
         boxShadow: theme.shadows[5],
         padding: theme.spacing(2, 4, 3),
-    },
-    formControl: {
-        margin: theme.spacing(1),
-        minWidth: 120,
-        maxWidth: 300,
-    },
-    noLabel: {
-        marginTop: theme.spacing(3),
-    },
-    root: {
-        width: 500,
-        '& > * + *': {
-            marginTop: theme.spacing(3),
-        },
-    },
+    }
 }));
 
 // getModalStyle is not a pure function, we roll the style only on the first render
