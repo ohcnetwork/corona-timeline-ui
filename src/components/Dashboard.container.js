@@ -7,7 +7,7 @@ import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
-import { mapWorldStatToChartSeries, mapIndiaStatToChartSeries, mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
+import { mapCountriesToPlotData, mapIndiaStatToChartSeries, mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
 import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona-reports.data.service';
 import { StackedLine } from './StackedLine';
 import { ChartSettingsModal} from './ChartSettingsModal';
@@ -17,17 +17,17 @@ const initialStackedData = {
   locStatMap: {},
 };
 
-const retrieveChartSeries = async (mode) => {
-  let chartSeries
-  if (mode === 'India') {
-    const indiaStats = await retrieveCoronaIndiaStats();
-    chartSeries = mapIndiaStatToChartSeries(indiaStats);
-  } else {
-    const worldStats = await retrieveCoronaWorldReports();
-    chartSeries = mapWorldStatToChartSeries(worldStats);
-  }
-  return chartSeries
-}
+// const retrieveChartSeries = async (mode) => {
+//   let chartSeries
+//   if (mode === 'India') {
+//     const indiaStats = await retrieveCoronaIndiaStats();
+//     chartSeries = mapIndiaStatToChartSeries(indiaStats);
+//   } else {
+//     const worldStats = await retrieveCoronaWorldReports();
+//     chartSeries = mapWorldStatToChartSeries(worldStats);
+//   }
+//   return chartSeries
+// }
 export function Dashboard() {
 
   const sliderRef = useRef();
@@ -40,30 +40,30 @@ export function Dashboard() {
   const [selectedDate, setSelectedDate] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [sliderValue, setSliderValue] = useState(1);
-  const [isPlayMode, setIsPlayMode] = useState(false);
-  const [mode, setMode] = useState(persistedMode ? persistedMode : 'India');
-  async function _setChartDataBasedOnMode(tempMode = null) {
-    const chartSeries = await retrieveChartSeries(tempMode ? tempMode : mode);
-    setChartSeries(chartSeries);
-  };
-  useEffect(() => {
-    async function initiateCoronaStats() {
-      const chartSeries = await retrieveChartSeries(mode);
-      const selectedLocSeries = mapToSelectedLocChartSeries(
-        selectedLocs,
-        chartSeries
-      );
-      setChartSeries(chartSeries);
-      setSelectedLocSeries(selectedLocSeries);
-      setSelectedDate(selectedLocSeries.dates[0]);
-      setIsPlayMode(true);
-    }
-    initiateCoronaStats();
-  }, []);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [filters, setFilters] = useState(persistedMode ? persistedMode : 'India');
+  // async function _setChartDataBasedOnMode(tempMode = null) {
+  //   const chartSeries = await retrieveChartSeries(tempMode ? tempMode : locationType);
+  //   setChartSeries(chartSeries);
+  // };
+  // useEffect(() => {
+  //   async function initiateCoronaStats() {
+  //     const chartSeries = await retrieveChartSeries(locationType);
+  //     const selectedLocSeries = mapToSelectedLocChartSeries(
+  //       selectedLocs,
+  //       chartSeries
+  //     );
+  //     setChartSeries(chartSeries);
+  //     setSelectedLocSeries(selectedLocSeries);
+  //     setSelectedDate(selectedLocSeries.dates[0]);
+  //     setIsPlaying(true);
+  //   }
+  //   initiateCoronaStats();
+  // }, []);
    // animation play and pause
    useEffect(() => {
      let interval;
-     if (!isPlayMode) {
+     if (!isPlaying) {
        clearInterval(interval);
        return;
      }
@@ -72,11 +72,11 @@ export function Dashboard() {
        setSliderValue(newValue);
        onSliderChange(null, newValue);
      }, 600);
-     if (!isPlayMode || sliderValue === selectedLocSeries?.dates.length) {
+     if (!isPlaying || sliderValue === selectedLocSeries?.dates.length) {
        clearInterval(interval);
      }
      return () => clearInterval(interval);
-   },[sliderValue, isPlayMode])
+   },[sliderValue, isPlaying])
 
   const sliderLabelFormat = (value) => selectedLocSeries.dates[value - 1];
 
@@ -85,9 +85,9 @@ export function Dashboard() {
     setSelectedDate(selectedLocSeries.dates[index - 1]);
   };
   const onModalOpen = () => {
-    _setChartDataBasedOnMode();
+    // _setChartDataBasedOnMode();
     setIsSettingsOpen(true); 
-    setIsPlayMode(false);
+    setIsPlaying(false);
   }
   const onModalClose = () => {
     setIsSettingsOpen(false);
@@ -102,16 +102,16 @@ export function Dashboard() {
     setSelectedLocSeries(selectedLocSeries);
     setSelectedDate(chartSeries.dates[0]);
     setSliderValue(1);
-    setMode(mode);
+    setFilters(mode);
     SetSelectedLocs(selectedLocs);
-    setIsPlayMode(true);
-    localStorage.setItem('selectedMode', mode)
+    setIsPlaying(true);
+    localStorage.setItem('selectedFilters', mode)
     localStorage.setItem('selectedLocs', selectedLocs);
   }
 
    return (
      <div className="chart-container">
-       <div className="add-countries">
+       {<div className="add-countries">
          <Button
           className="add-country-btn"
            onClick={onModalOpen}
@@ -122,20 +122,20 @@ export function Dashboard() {
            +
       </Button>
        </div>
-       <div className="stacked-line">
+       /* <div className="stacked-line">
          <StackedLine
            categories={selectedLocSeries.dates}
            series={selectedLocSeries.series}
            index={sliderValue}
-           mode={mode}
+           mode={locationType}
          ></StackedLine>
        </div>
        <div className="footer">
          <div className="play-pause">
            <ToggleButtonGroup
-             value={isPlayMode}
+             value={isPlaying}
              exclusive
-             onChange={(e, v) => setIsPlayMode(v)}
+             onChange={(e, v) => setIsPlaying(v)}
              aria-label="text alignment"
            >
              <ToggleButton value={true} aria-label="play">
@@ -161,15 +161,15 @@ export function Dashboard() {
             </div>
             <div className="slider-selected-date">{selectedDate}</div>
           </div>
-       </div>
+       </div> */}
        <ChartSettingsModal
-        mode={mode}
+        mode={filters}
         isModalOpen={isSettingsOpen}
         selectedLocs={selectedLocs}
         locations={Object.keys(chartSeries.locStatMap)}
         onModalClose={onModalClose}
         onApplySettings={onApplySettings}
-        onModeChange={(tempMode) => _setChartDataBasedOnMode(tempMode)}
+        onModeChange={(tempMode) =>{} }
        ></ChartSettingsModal>
      </div> 
    );
