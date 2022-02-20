@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
-import { CountryAPIResponse } from '../api/api.model';
-import { ChartJsDatset, DropDownOptions, PlotData } from '../components/chart.model';
+import { CountryAPIResponse, IndiaApiResponse } from '../api/api.model';
+import { ApiDateRange, ChartJsDatset, DropDownOptions, MissingDataPoint, PlotData } from '../components/chart.model';
 
 export const mapCountriesToPlotData = (data: CountryAPIResponse): PlotData  => {
     const dates = _.map(_.sample(data), 'date');
@@ -10,10 +10,11 @@ export const mapCountriesToPlotData = (data: CountryAPIResponse): PlotData  => {
             data: _.map(report, 'confirmed'),
             borderColor: '',
             backgroundColor: '',
-            tension: 0.5
+            tension: 0.5,
+            apiType: 'international'
         }
     });
-    return { dates, datasetList };
+    return { apiType:'international', dates, datasetList };
 }
 
 export const mapCountriesToDropDown = (countryStat: CountryAPIResponse): DropDownOptions[] => {
@@ -22,31 +23,94 @@ export const mapCountriesToDropDown = (countryStat: CountryAPIResponse): DropDow
         value: index,
     }));
 }
+export const mapCountryNames = (countryStat: CountryAPIResponse): string[] => {
+    return _.keys(countryStat);
+}
 
-export const mapIndiaStatToChartSeries = (indiaDailyStatResponse: any) => {
-    // const dates = indiaDailyStatResponse.data.map(d => d.day);
-    // const initialStateLookup = _.chain(indiaDailyStatResponse)
-    //                             .get('data', [])
-    //                             .map('regional')
-    //                             .flatten()
-    //                             .map('loc').uniq()
-    //                             .map(state => ({name: state, data:[]}))
-    //                             .keyBy('name').value();
+export const mapPlaceFilterToDropDownOptions = (places: string[]) => {
+    return places.map((place, index) => {
+        return {
+            label: place,
+            value: index
+        }
+    })
+}
 
-    // const locStatMap = indiaDailyStatResponse.data.reduce((lookup, data, i) => {
-    //     data.regional.forEach((region) => {
-    //         lookup[region.loc].data.push(region.totalConfirmed);
-    //     })
+export const mapIndiaApiResponseToPlotData = (indiaApiResponse: IndiaApiResponse): PlotData => {
+    const dates = indiaApiResponse.data.map(d => d.day);
+    const initialStateLookup: {[key: string]: {name: string, data: number[]}}  = _.chain(indiaApiResponse)
+                                .get('data', [])
+                                .map('regional')
+                                .flatten()
+                                .map('loc').uniq()
+                                .map(state => ({name: state, data:[]}))
+                                .keyBy('name').value();
+
+    const locStatMap = indiaApiResponse.data.reduce((lookup, data, i) => {
+        data.regional.forEach((region) => {
+            lookup[region.loc].data.push(region.totalConfirmed);
+        })
         
-    //     // add previous totalConfirmed || 0 for missing state data
-    //     _.each(lookup, (lookupItem) => {
-    //         lookup[lookupItem.name] = !!lookupItem.data[i] 
-    //         ? lookupItem 
-    //         : { ...lookupItem, data: [...lookupItem.data, lookupItem.data[i-1] || 0]}
-    //     });
-    //     return lookup;
-    // }, initialStateLookup);
-    return {};
+        // add previous totalConfirmed || 0 for missing state data
+        _.each(lookup, (lookupItem) => {
+            lookup[lookupItem.name] = !!lookupItem.data[i] 
+            ? lookupItem 
+            : { ...lookupItem, data: [...lookupItem.data, lookupItem.data[i-1] || 0]}
+        });
+        return lookup;
+    }, initialStateLookup);
+    const datasetList: ChartJsDatset[] = _.map(locStatMap, (dataset) => {
+        return {
+            label: dataset.name,
+            data: dataset.data,
+            borderColor: '',
+            backgroundColor: '',
+            tension: 0.5,
+            apiType: 'india'
+        }
+    })
+    return {dates, apiType: 'india', datasetList};
+}
+
+export const mapToMissingDataPoints = (plotDataList: PlotData[]): MissingDataPoint[] => {
+    const allDates: string[] =  _.chain(plotDataList).flatMap('dates').uniq().sort().value();
+    const apiDateRange: ApiDateRange[] = plotDataList.map(({apiType, dates}) => {
+        return {
+            apiType,
+            startDate: _.head(dates) || '',
+            endDate: _.last(dates)|| ''
+        };
+    }); 
+
+    return _mapApiDateRangeToMissingDataPoint(apiDateRange, allDates);
+}
+const _mapApiDateRangeToMissingDataPoint = (apiDateRange: ApiDateRange[], dates: string[]): MissingDataPoint[] => {
+   return apiDateRange.map((dateRange): MissingDataPoint => {
+        return {
+            apiType: dateRange.apiType,
+            prependNullCount: _.findIndex(dates, dateRange.startDate) + 1,
+            appendNullCount: _.findIndex(dates, dateRange.endDate) + 1
+        }
+    })   
+}
+
+export const mapToProcessedPlotData = (plotDataList: PlotData[], missingDataPoints: MissingDataPoint[]): PlotData[] => {
+    return plotDataList.map((plotData: PlotData): PlotData => {
+        const missingDataPoint = missingDataPoints.find((missingDataPoint) => missingDataPoint.apiType === plotData.apiType);
+        return {
+            ...plotData,
+            datasetList: plotData.datasetList.map(dataSet => {
+                return {
+                    ...dataSet,
+                    data: _.concat(
+                        _.fill(Array(missingDataPoint?.prependNullCount || 0), null), 
+                        dataSet.data,
+                        _.fill(Array(missingDataPoint?.appendNullCount || 0), null), 
+                    )
+                }
+            })
+        }
+    });
 }
 
 export const mapToSelectedLocChartSeries = (selectedPlaces: any, chartSeries: any) => {
