@@ -1,15 +1,23 @@
 import * as _ from 'lodash';
 import { CountryAPIResponse, IndiaApiResponse } from '../api/api.model';
 import { ApiDateRange, ChartJsDataset, DropDownOptions, FinalPlotData, MissingDataPoint, PlotData, SelectedSettings } from '../models/chart.model';
-
+function getRandomRgb() {
+    var num = Math.round(0xffffff * Math.random());
+    var r = num >> 16;
+    var g = num >> 8 & 255;
+    var b = num & 255;
+    return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+  }
 export const mapCountriesToPlotData = (data: CountryAPIResponse): PlotData  => {
     const dates = _.map(_.sample(data), (datum) => new Date(datum.date).toLocaleDateString());
     const datasetList: ChartJsDataset[] = _.map(data, (report, key) => {
+        const color = getRandomRgb();
         return {
             label: key.replace(',',''),
             data: _.map(report, 'confirmed'),
-            borderColor: '',
-            backgroundColor: '',
+            borderColor: color,
+            backgroundColor: color,
+            pointStyle: 'line',
             tension: 0.5,
             apiType: 'international'
         }
@@ -60,11 +68,13 @@ export const mapIndiaApiResponseToPlotData = (indiaApiResponse: IndiaApiResponse
         return lookup;
     }, initialStateLookup);
     const datasetList: ChartJsDataset[] = _.map(locStatMap, (dataset) => {
+        const color = getRandomRgb();
         return {
             label: dataset.name,
             data: dataset.data,
-            borderColor: '',
-            backgroundColor: '',
+            pointStyle: 'line',
+            borderColor: color,
+            backgroundColor: color,
             tension: 0.5,
             apiType: 'india'
         }

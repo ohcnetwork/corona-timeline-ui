@@ -11,7 +11,9 @@ import { mapCountriesToPlotData, mapIndiaApiResponseToPlotData, mapToFinalPlotDa
 import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona.data.service';
 import { StackedLine } from './StackedLine';
 import { ChartSettingsModal} from './ChartSettingsModal';
-import { FinalPlotData, SelectedSettings } from '../models/chart.model';
+import { ChartJsData, FinalPlotData, SelectedSettings } from '../models/chart.model';
+import { LineChart } from './LineChart';
+import { ChartJSOrUndefined } from 'react-chartjs-2/dist/types';
 
 const initialStackedData = {
   dates: [''],
@@ -36,16 +38,17 @@ export function Dashboard() {
   const persistedApiTypes = persistedLocs ? localStorage.getItem('apiTypes') : null;
   const [selectedSetttings, setSelectedSettings] = useState<SelectedSettings>({
      selectedApiTypes: ['india', 'international'],
-     selectedLocations: [0, 15, 16]
+     selectedLocations: [23, 15,33, 215]
   })
   const [finalPlotData, setFinalPlotData] = useState<FinalPlotData>();
+  const [chartJsData, setChartJsData] = useState<ChartJsData>({labels: [], datasets:[]});
   // const [selectedLocs, SetSelectedLocs] = useState(persistedLocs && persistedMode ? persistedLocs.split(',') : ['Delhi', 'Kerala']);
   // const [chartSeries, setChartSeries] = useState(initialStackedData);
   // const [selectedLocSeries, setSelectedLocSeries] = useState({dates:[], series:[{name:'', data: []}]});
   // const [selectedDate, setSelectedDate] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  // const [sliderValue, setSliderValue] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [sliderValue, setSliderValue] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [filters, setFilters] = useState();
   // async function _setChartDataBasedOnMode(tempMode = null) {
   //   const chartSeries = await retrieveChartSeries(tempMode ? tempMode : locationType);
@@ -59,27 +62,36 @@ export function Dashboard() {
       ]);
       const plotData = mapToPlotData(dataSets[0], dataSets[1]);
       const finalPlotData = mapToFinalPlotData(selectedSetttings, plotData);
-      console.log(finalPlotData);
+      console.log('plotData', plotData);
+      setFinalPlotData(finalPlotData);
     }
     initiateCoronaStats();
   }, []);
-   // animation play and pause
-  //  useEffect(() => {
-  //    let interval;
-  //    if (!isPlaying) {
-  //      clearInterval(interval);
-  //      return;
-  //    }
-  //    interval = setInterval(() => {
-  //      const newValue = sliderValue + 1;
-  //      setSliderValue(newValue);
-  //      onSliderChange(null, newValue);
-  //    }, 600);
-  //    if (!isPlaying || sliderValue === selectedLocSeries?.dates.length) {
-  //      clearInterval(interval);
-  //    }
-  //    return () => clearInterval(interval);
-  //  },[sliderValue, isPlaying])
+  // animation play and pause
+   useEffect(() => {
+     let interval: any;
+     if (!isPlaying) {
+       clearInterval(interval);
+       return;
+     }
+     let newValue = 1;
+     interval = setInterval(() => {
+        newValue = newValue + 1;
+        setChartJsData(
+          {
+            labels: finalPlotData?.dates.slice(0, newValue) || [],
+            datasets: finalPlotData?.datasetList.map((dataset) => ({
+              ...dataset,
+              data: dataset.data.slice(0, newValue) || []
+            })) || []
+          }
+        )
+     }, 600);
+    //  if (!isPlaying || sliderValue === selectedLocSeries?.dates.length) {
+    //    clearInterval(interval);
+    //  }
+     return () => clearInterval(interval);
+   },[sliderValue, isPlaying, finalPlotData])
 
   // const sliderLabelFormat = (value) => selectedLocSeries.dates[value - 1];
 
@@ -114,17 +126,25 @@ export function Dashboard() {
 
    return (
      <div className="chart-container">
-       {<div className="add-countries">
-         <Button
-          className="add-country-btn"
-           onClick={onModalOpen}
-           variant="contained"
-           color="default"
-           endIcon={<PublicIcon></PublicIcon>}
-         >
-           +
-      </Button>
+       {
+         <>
+         <div className="add-countries">
+          <Button
+            className="add-country-btn"
+            onClick={onModalOpen}
+            variant="contained"
+            color="default"
+            endIcon={<PublicIcon></PublicIcon>}
+          >
+            +
+        </Button>
        </div>
+        <div className="stacked-line">
+          {finalPlotData && <LineChart
+            chartJsDataset={chartJsData}
+          />}
+        </div>
+        </>
        /* <div className="stacked-line">
          <StackedLine
            categories={selectedLocSeries.dates}

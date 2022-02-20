@@ -19,12 +19,15 @@ export interface ApiDateRange {
 export interface ChartJsDataset {
   label: string;
   data: (number|null)[];
-  borderColor: string;
-  backgroundColor: string;
+  borderColor?: string;
+  backgroundColor?: string;
   tension: number;
   apiType: ApiType;
 }
-
+export interface ChartJsData {
+  labels: string[];
+  datasets: ChartJsDataset[];
+}
 export interface DropDownOptions {
     label: string;
     value: number;
