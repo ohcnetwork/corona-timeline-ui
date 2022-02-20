@@ -1,10 +1,10 @@
 import * as _ from 'lodash';
 import { CountryAPIResponse, IndiaApiResponse } from '../api/api.model';
-import { ApiDateRange, ChartJsDatset, DropDownOptions, MissingDataPoint, PlotData } from '../components/chart.model';
+import { ApiDateRange, ChartJsDataset, DropDownOptions, FinalPlotData, MissingDataPoint, PlotData, SelectedSettings } from '../models/chart.model';
 
 export const mapCountriesToPlotData = (data: CountryAPIResponse): PlotData  => {
-    const dates = _.map(_.sample(data), 'date');
-    const datasetList: ChartJsDatset[] = _.map(data, (report, key) => {
+    const dates = _.map(_.sample(data), (datum) => new Date(datum.date).toLocaleDateString());
+    const datasetList: ChartJsDataset[] = _.map(data, (report, key) => {
         return {
             label: key.replace(',',''),
             data: _.map(report, 'confirmed'),
@@ -37,7 +37,7 @@ export const mapPlaceFilterToDropDownOptions = (places: string[]) => {
 }
 
 export const mapIndiaApiResponseToPlotData = (indiaApiResponse: IndiaApiResponse): PlotData => {
-    const dates = indiaApiResponse.data.map(d => d.day);
+    const dates = indiaApiResponse.data.map(d => new Date(d.day).toLocaleDateString());
     const initialStateLookup: {[key: string]: {name: string, data: number[]}}  = _.chain(indiaApiResponse)
                                 .get('data', [])
                                 .map('regional')
@@ -59,7 +59,7 @@ export const mapIndiaApiResponseToPlotData = (indiaApiResponse: IndiaApiResponse
         });
         return lookup;
     }, initialStateLookup);
-    const datasetList: ChartJsDatset[] = _.map(locStatMap, (dataset) => {
+    const datasetList: ChartJsDataset[] = _.map(locStatMap, (dataset) => {
         return {
             label: dataset.name,
             data: dataset.data,
@@ -73,7 +73,11 @@ export const mapIndiaApiResponseToPlotData = (indiaApiResponse: IndiaApiResponse
 }
 
 export const mapToMissingDataPoints = (plotDataList: PlotData[]): MissingDataPoint[] => {
-    const allDates: string[] =  _.chain(plotDataList).flatMap('dates').uniq().sort().value();
+    const allDates: string[] =  _.chain(plotDataList)
+                                .flatMap('dates')
+                                .uniq()
+                                .sortBy((d) => new Date(d))
+                                .value();
     const apiDateRange: ApiDateRange[] = plotDataList.map(({apiType, dates}) => {
         return {
             apiType,
@@ -86,12 +90,14 @@ export const mapToMissingDataPoints = (plotDataList: PlotData[]): MissingDataPoi
 }
 const _mapApiDateRangeToMissingDataPoint = (apiDateRange: ApiDateRange[], dates: string[]): MissingDataPoint[] => {
    return apiDateRange.map((dateRange): MissingDataPoint => {
-        return {
+    const prependNullCount = _.findIndex(dates,(date) => date === dateRange.startDate) + 1;   
+    const  appendNullCount = _.findIndex(dates, (date) => date === dateRange.endDate) + 1;
+    return {
             apiType: dateRange.apiType,
-            prependNullCount: _.findIndex(dates, dateRange.startDate) + 1,
-            appendNullCount: _.findIndex(dates, dateRange.endDate) + 1
+            prependNullCount: prependNullCount === 1 ? 0 : prependNullCount,
+            appendNullCount: appendNullCount === dates.length ? 0 : appendNullCount
         }
-    })   
+    });   
 }
 
 export const mapToProcessedPlotData = (plotDataList: PlotData[], missingDataPoints: MissingDataPoint[]): PlotData[] => {
@@ -118,4 +124,30 @@ export const mapToSelectedLocChartSeries = (selectedPlaces: any, chartSeries: an
     return  chartSeries.locStatMap[country];
     });
   return {dates: chartSeries.dates, series};
+}
+
+export const mapToPlotData = (countries: CountryAPIResponse, indianStates: IndiaApiResponse): PlotData[] => {
+    const indianPlotData = mapIndiaApiResponseToPlotData(indianStates);
+    const countryPlotData = mapCountriesToPlotData(countries);
+    const missingData = mapToMissingDataPoints([countryPlotData, indianPlotData]);
+    return mapToProcessedPlotData([countryPlotData, indianPlotData], missingData);
+}
+
+export const mapToFinalPlotData = (selectedSettings: SelectedSettings, plotData: PlotData[]): FinalPlotData => {
+    const filteredChain = _.chain(plotData)
+        .filter(plotData => selectedSettings.selectedApiTypes.includes(plotData.apiType));
+    const dates: string[] = filteredChain
+        .sortBy(plotData, (plot) => plot.dates.length)
+        .last()
+        .get('dates')
+        .value();
+    const datasetList = filteredChain
+        .map('datasetList')
+        .flatten()
+        .filter((d, i) => selectedSettings.selectedLocations.includes(i))
+        .value();
+    return {
+        dates,
+        datasetList
+    }
 }

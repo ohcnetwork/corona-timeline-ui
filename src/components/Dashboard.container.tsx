@@ -7,10 +7,11 @@ import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
-import { mapCountriesToPlotData, mapIndiaStatToChartSeries, mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
-import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona-reports.data.service';
+import { mapCountriesToPlotData, mapIndiaApiResponseToPlotData, mapToFinalPlotData, mapToPlotData, mapToSelectedLocChartSeries } from '../mappers/chart-view.mapper';
+import { retrieveCoronaWorldReports, retrieveCoronaIndiaStats } from '../api/corona.data.service';
 import { StackedLine } from './StackedLine';
 import { ChartSettingsModal} from './ChartSettingsModal';
+import { FinalPlotData, SelectedSettings } from '../models/chart.model';
 
 const initialStackedData = {
   dates: [''],
@@ -32,58 +33,60 @@ export function Dashboard() {
 
   const sliderRef = useRef();
   const persistedLocs = localStorage.getItem('selectedLocs');
-  const persistedMode = persistedLocs ? localStorage.getItem('selectedMode') : null;
-
-  const [selectedLocs, SetSelectedLocs] = useState(persistedLocs && persistedMode ? persistedLocs.split(',') : ['Delhi', 'Kerala']);
-  const [chartSeries, setChartSeries] = useState(initialStackedData);
-  const [selectedLocSeries, setSelectedLocSeries] = useState({dates:[], series:[{name:'', data: []}]});
-  const [selectedDate, setSelectedDate] = useState('');
+  const persistedApiTypes = persistedLocs ? localStorage.getItem('apiTypes') : null;
+  const [selectedSetttings, setSelectedSettings] = useState<SelectedSettings>({
+     selectedApiTypes: ['india', 'international'],
+     selectedLocations: [0, 15, 16]
+  })
+  const [finalPlotData, setFinalPlotData] = useState<FinalPlotData>();
+  // const [selectedLocs, SetSelectedLocs] = useState(persistedLocs && persistedMode ? persistedLocs.split(',') : ['Delhi', 'Kerala']);
+  // const [chartSeries, setChartSeries] = useState(initialStackedData);
+  // const [selectedLocSeries, setSelectedLocSeries] = useState({dates:[], series:[{name:'', data: []}]});
+  // const [selectedDate, setSelectedDate] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [sliderValue, setSliderValue] = useState(1);
+  // const [sliderValue, setSliderValue] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [filters, setFilters] = useState(persistedMode ? persistedMode : 'India');
+  const [filters, setFilters] = useState();
   // async function _setChartDataBasedOnMode(tempMode = null) {
   //   const chartSeries = await retrieveChartSeries(tempMode ? tempMode : locationType);
   //   setChartSeries(chartSeries);
   // };
-  // useEffect(() => {
-  //   async function initiateCoronaStats() {
-  //     const chartSeries = await retrieveChartSeries(locationType);
-  //     const selectedLocSeries = mapToSelectedLocChartSeries(
-  //       selectedLocs,
-  //       chartSeries
-  //     );
-  //     setChartSeries(chartSeries);
-  //     setSelectedLocSeries(selectedLocSeries);
-  //     setSelectedDate(selectedLocSeries.dates[0]);
-  //     setIsPlaying(true);
-  //   }
-  //   initiateCoronaStats();
-  // }, []);
+  useEffect(() => {
+    async function initiateCoronaStats() {
+      const dataSets = await Promise.all([
+        retrieveCoronaWorldReports(),
+        retrieveCoronaIndiaStats()
+      ]);
+      const plotData = mapToPlotData(dataSets[0], dataSets[1]);
+      const finalPlotData = mapToFinalPlotData(selectedSetttings, plotData);
+      console.log(finalPlotData);
+    }
+    initiateCoronaStats();
+  }, []);
    // animation play and pause
-   useEffect(() => {
-     let interval;
-     if (!isPlaying) {
-       clearInterval(interval);
-       return;
-     }
-     interval = setInterval(() => {
-       const newValue = sliderValue + 1;
-       setSliderValue(newValue);
-       onSliderChange(null, newValue);
-     }, 600);
-     if (!isPlaying || sliderValue === selectedLocSeries?.dates.length) {
-       clearInterval(interval);
-     }
-     return () => clearInterval(interval);
-   },[sliderValue, isPlaying])
+  //  useEffect(() => {
+  //    let interval;
+  //    if (!isPlaying) {
+  //      clearInterval(interval);
+  //      return;
+  //    }
+  //    interval = setInterval(() => {
+  //      const newValue = sliderValue + 1;
+  //      setSliderValue(newValue);
+  //      onSliderChange(null, newValue);
+  //    }, 600);
+  //    if (!isPlaying || sliderValue === selectedLocSeries?.dates.length) {
+  //      clearInterval(interval);
+  //    }
+  //    return () => clearInterval(interval);
+  //  },[sliderValue, isPlaying])
 
-  const sliderLabelFormat = (value) => selectedLocSeries.dates[value - 1];
+  // const sliderLabelFormat = (value) => selectedLocSeries.dates[value - 1];
 
-  const onSliderChange =(event, index) => {
-    setSliderValue(index);
-    setSelectedDate(selectedLocSeries.dates[index - 1]);
-  };
+  // const onSliderChange =(event, index) => {
+  //   setSliderValue(index);
+  //   setSelectedDate(selectedLocSeries.dates[index - 1]);
+  // };
   const onModalOpen = () => {
     // _setChartDataBasedOnMode();
     setIsSettingsOpen(true); 
@@ -93,21 +96,21 @@ export function Dashboard() {
     setIsSettingsOpen(false);
   }
   
-  const onApplySettings = ({mode, selectedLocs}) => {
-    setIsSettingsOpen(false);
-    const selectedLocSeries = mapToSelectedLocChartSeries(
-      selectedLocs,
-      chartSeries
-    );
-    setSelectedLocSeries(selectedLocSeries);
-    setSelectedDate(chartSeries.dates[0]);
-    setSliderValue(1);
-    setFilters(mode);
-    SetSelectedLocs(selectedLocs);
-    setIsPlaying(true);
-    localStorage.setItem('selectedFilters', mode)
-    localStorage.setItem('selectedLocs', selectedLocs);
-  }
+  // const onApplySettings = ({mode, selectedLocs}) => {
+  //   setIsSettingsOpen(false);
+  //   const selectedLocSeries = mapToSelectedLocChartSeries(
+  //     selectedLocs,
+  //     chartSeries
+  //   );
+  //   setSelectedLocSeries(selectedLocSeries);
+  //   setSelectedDate(chartSeries.dates[0]);
+  //   setSliderValue(1);
+  //   setFilters(mode);
+  //   SetSelectedLocs(selectedLocs);
+  //   setIsPlaying(true);
+  //   localStorage.setItem('selectedFilters', mode)
+  //   localStorage.setItem('selectedLocs', selectedLocs);
+  // }
 
    return (
      <div className="chart-container">
@@ -165,11 +168,11 @@ export function Dashboard() {
        <ChartSettingsModal
         mode={filters}
         isModalOpen={isSettingsOpen}
-        selectedLocs={selectedLocs}
-        locations={Object.keys(chartSeries.locStatMap)}
+        selectedLocs={selectedSetttings.selectedLocations}
+        locations={[]}
         onModalClose={onModalClose}
-        onApplySettings={onApplySettings}
-        onModeChange={(tempMode) =>{} }
+        onApplySettings={() => {}}
+        onModeChange={() =>{} }
        ></ChartSettingsModal>
      </div> 
    );

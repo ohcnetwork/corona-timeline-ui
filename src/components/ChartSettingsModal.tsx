@@ -1,6 +1,6 @@
 import React, { useState, useEffect} from 'react';
 
-import { Modal, TextField, Radio, Button, Checkbox, FormControlLabel } from '@material-ui/core';
+import { Modal, TextField, Button, Checkbox, FormControlLabel } from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -33,27 +33,26 @@ export const ChartSettingsModal = ({ mode, isModalOpen, onModalClose, onModeChan
                                     locations, selectedLocs, onApplySettings }: any) => {
     const classes: any = useStyles();
     const [modalStyle] = React.useState(getModalStyle);
-    const [_mode, setMode] = useState('');
+    const [filter, setFilters] = useState('');
     const [_selectedLocs, setSelectedLocs] = useState([]);
-    const label = _mode === 'India' ? 'States' : 'Countries';
+    const label = filter === 'India' ? 'States' : 'Countries';
     useEffect(() => {
-        setMode(mode);
+        setFilters(mode);
         setSelectedLocs(selectedLocs);
     }, [mode, selectedLocs, isModalOpen])
     const onApply = () => {
-        onApplySettings({mode: _mode, selectedLocs: _selectedLocs})
+        onApplySettings({mode: filter, selectedLocs: _selectedLocs})
     }
     const onCountriesSelection = (event: any, countries: any) => {
         setSelectedLocs(countries);
     }
-    const onModeSelection = (event: any) => {
-        setSelectedLocs([]);
-        setMode(event.target.value);
+    const onFilterChange = (event: any) => {
+        setFilters(event.target.value);
         onModeChange(event.target.value);
     }
-    const onSelectAll = () => {
-        setSelectedLocs(locations);
-    }
+    // const onSelectAll = () => {
+    //     setSelectedLocs(locations);
+    // }
     return <Modal
         open={isModalOpen}
         onClose={onModalClose}
